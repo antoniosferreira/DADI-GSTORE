@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option csharp_namespace = "PM";
+
+package spcs;
+
+service PCSServices {
+	rpc InitServer (ServerRequest) returns (Void);
+	rpc InitClient (ClientRequest) returns (Void);
+}
+
+message ServerRequest {
+	string serverID = 1;
+	string serverURL = 2;
+	int32 minDelay = 3;
+	int32 maxDelay = 4;
+}
+
+message ClientRequest {
+	string username = 1;
+	string clientUrl = 2;
+	string scriptFile = 3;
+}
+
+message Void {}
