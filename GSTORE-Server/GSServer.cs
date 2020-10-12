@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Grpc.Core;
+using GSTORE_Server.Storage;
 
 
 namespace GSTORE_Server
@@ -11,15 +9,15 @@ namespace GSTORE_Server
     {
         // Server Configuration Information
         public string ServerID { get { return _serverID; } }
-        private string _serverID;
+        private readonly string _serverID;
         public string ServerURL { get { return _serverURL; } }
-        private string _serverURL;
+        private readonly string _serverURL;
         public int ServerPort { get { return _serverPort; } }
-        private int _serverPort;
+        private readonly int _serverPort;
         public int MinDelay { get { return _minDelay; } }
-        private int _minDelay;
+        private readonly int _minDelay;
         public int MaxDelay { get { return _maxDelay; } }
-        private int _maxDelay;
+        private readonly int _maxDelay;
 
         public GSServer(string serverID, string serverURL, int serverPort, int minDelay, int maxDelay)
         {
@@ -37,18 +35,19 @@ namespace GSTORE_Server
         public void Start()
         {
             Console.WriteLine("##### GSTORE-SERVER RUNNING  #####");
-
+           
             // Starts Storage Service to Clients 
+            StorageServer storageServer = new StorageServer();
             Server server = new Server
             {
-                Services = { GStoreServerServices.BindService(new GStoreServerService()) },
+                Services = { StorageServerServices.BindService(new StorageServerService(storageServer)),
+                            ServerServices.BindService(new ServerService(storageServer))},
                 Ports = { new ServerPort(ServerURL, ServerPort, ServerCredentials.Insecure) }
             };
             server.Start();
-            Console.ReadKey();
-
-
+            
             Console.WriteLine("Press any key to stop...");
+            Console.ReadKey();
             server.ShutdownAsync().Wait();
         }
     }

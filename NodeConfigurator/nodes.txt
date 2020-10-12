@@ -1,0 +1,7 @@
+﻿SERVER s01 http://localhost:100
+SERVER s02 http://localhost:102
+SERVER s03 http://localhost:103
+CLIENT c01 http://localhost:104
+CLIENT c02 http://localhost:105
+CLIENT c03 http://localhost:106
+

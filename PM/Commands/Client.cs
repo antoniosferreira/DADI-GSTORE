@@ -22,13 +22,12 @@ namespace PM.Commands
         public override void Exec(string input)
         {
             Match match = Rule.Match(input);
-            if (match.Success)
-            {
+            try {
                 string username = match.Groups["username"].Value;
                 string clientURL = match.Groups["URL"].Value;
                 string scriptFile = match.Groups["scriptFile"].Value;
 
-                var reply = PCSClient.InitClient(
+                var reply = PCSClient.InitClientAsync(
                          new ClientRequest {
                             Username = username,
                             ClientUrl = clientURL,
@@ -36,9 +35,12 @@ namespace PM.Commands
                          });
 
                 return;
-            }
 
-            Console.WriteLine("Failed to execute command:" + input);
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine("Failed to execute command:" + input);
+            }
         }
 
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Grpc.Net.Client;
 using PM.Commands;
+using NodesConfigurator;
 
 namespace PM
 {
@@ -9,10 +10,10 @@ namespace PM
     {
         public const string PCSUrl = "http://localhost:10000";
         public PCSServices.PCSServicesClient PCSClient;
-        
-        
+      
         private List<Command> Commands;
 
+        public NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
         public PM()
         {
@@ -23,8 +24,15 @@ namespace PM
             Commands = new List<Command>
             {
                 new Server(PCSClient),
-                new Client(PCSClient)
-                
+                new Client(PCSClient),
+
+                new ReplicationFactor(this),
+                new Partition(this),
+                new Crash(this),
+                new Unfreeze(this),
+                new Freeze(this),
+                new Status(this),
+                new Wait()
             };
         }
 

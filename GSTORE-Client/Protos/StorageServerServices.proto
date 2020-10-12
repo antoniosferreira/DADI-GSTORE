@@ -4,7 +4,7 @@ option csharp_namespace = "GSTORE_Client";
 
 package gstoreservices;
 
-service GStoreServerServices {
+service StorageServerServices {
 	rpc Read (ReadRequest) returns (ReadReply);
 	rpc Write (WriteRequest) returns (WriteReply);
 }
@@ -14,8 +14,7 @@ message ReadRequest {
 }
 
 message ReadReply {
-	bool success = 1;
-	string value = 2;
+	string value = 1;
 }
 
 message WriteRequest {
@@ -24,6 +23,5 @@ message WriteRequest {
 }
 
 message WriteReply {
-  bool success = 1;
-  string message = 2;
+	bool success = 1;
 }

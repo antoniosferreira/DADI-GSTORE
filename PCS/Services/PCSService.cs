@@ -45,6 +45,7 @@ namespace PCS
         // INIT SERVER OPERATION
         public override Task<Void> InitClient(ClientRequest request, ServerCallContext context)
         {
+
             Process serverProcess = new Process();
 
             // Finds GSTORE-Client executable

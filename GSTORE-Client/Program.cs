@@ -19,8 +19,10 @@ namespace GSTORE_Client
                 GSClient client = new GSClient(args[0], args[1], args[2]);
                 Console.WriteLine("=== CLIENT RUNNING ===");
                 Console.WriteLine("ClientID:" + args[0] + " ClientURL:" + args[1]);
- 
+
+                client.Start();
                 Console.ReadLine();
+
             } catch (Exception e)
             {
                 Console.WriteLine(e.StackTrace);

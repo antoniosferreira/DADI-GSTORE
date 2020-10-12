@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option csharp_namespace = "PM";
+
+package gstoreservices;
+
+service ServerServices {
+	rpc Status (Empty) returns (Empty);
+	rpc Freeze (Empty) returns (Empty);
+	rpc Unfreeze (Empty) returns (Empty);
+	rpc Crash (Empty) returns (Empty);
+}
+
+message Empty {} 

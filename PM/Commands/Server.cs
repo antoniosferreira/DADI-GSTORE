@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace PM.Commands
@@ -22,27 +20,30 @@ namespace PM.Commands
         public override void Exec(string input)
         {
             Match match = Rule.Match(input);
-            if (match.Success)
+
+            try
             {
                 string serverID = match.Groups["sid"].Value;
                 string serverURL = match.Groups["URL"].Value;
                 int minDelay = int.Parse(match.Groups["mind"].Value);
                 int maxDelay = int.Parse(match.Groups["maxd"].Value);
 
-                var reply = PCSClient.InitServer(
-                         new ServerRequest {
-                            ServerID = serverID,
-                            ServerURL = serverURL,
-                            MinDelay = minDelay,
-                            MaxDelay = maxDelay
-                         });
+                PCSClient.InitServerAsync(
+                    new ServerRequest {
+                         ServerID = serverID,
+                         ServerURL = serverURL,
+                         MinDelay = minDelay,
+                         MaxDelay = maxDelay});
 
-                return;
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine("Failed to execute command:" + input);
             }
 
-            Console.WriteLine("Failed to execute command:" + input);
+
         }
-
-
     }
 }
