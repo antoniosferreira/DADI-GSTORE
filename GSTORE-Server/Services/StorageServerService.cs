@@ -23,13 +23,15 @@ namespace GSTORE_Server
 
         private ReadReply ProcessReadRequest(ReadRequest request)
         {
-            Console.WriteLine("Read");
+            bool success;
+            string value;
 
-            string value = _server.Read(request.Key);
+            (success, value) = _server.Read(request.PartitionID, request.ObjectID);
             
             return new ReadReply
             {
-                Value = value
+                Value = value,
+                Success = success
             };
         }
 
@@ -42,13 +44,15 @@ namespace GSTORE_Server
 
         private WriteReply ProcessWriteRequest(WriteRequest request)
         {
-            Console.WriteLine("Write");
-
-            bool success = _server.Write(request.Key, request.Value);
+            bool success = false;
+            string sid = "-1";
+            
+            (success, sid)= _server.Write(request.PartitionID, request.ObjectID, request.Value);
 
             return new WriteReply
             {
-                Success = success
+                Success = success,
+                ServerID = sid
             };
         }
 

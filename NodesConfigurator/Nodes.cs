@@ -26,15 +26,7 @@ namespace NodesConfigurator
                     ClientsList.Add(words[1], words[2]);
             }
 
-            foreach (KeyValuePair<string, string> kvp in ClientsList)
-            {
-                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
-            }
-
-            foreach (KeyValuePair<string, string> kvp in ServersList)
-            {
-                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
-            }
+            
 
         }
 

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option csharp_namespace = "GSTORE_Server";
+
+package gstoreservices;
+
+service ServerCommunicationServices {
+	rpc LockObject (LockObjectRequest) returns (LockObjectReply);
+	rpc WriteObject (WriteObjectRequest) returns (WriteObjectReply);
+}
+
+message LockObjectRequest {
+	string partitionID = 1;
+	string objectID = 2;
+} 
+
+message LockObjectReply {}
+
+message WriteObjectRequest {
+	string partitionID = 1;
+	string objectID = 2;
+	string value = 3;
+}
+
+message WriteObjectReply {}

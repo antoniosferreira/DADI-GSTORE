@@ -10,7 +10,7 @@ namespace PM
 
         static void Main(string[] args)
         {
-            bool run = true;
+            bool Run = true;
 
 
             if (args.Length < 1)
@@ -27,8 +27,8 @@ namespace PM
             do
             {
                 Console.Write("-->");
-                run = puppet.ParseCommand(Console.ReadLine());
-            } while (run);
+                Run = puppet.ParseCommand(Console.ReadLine());
+            } while (Run);
         }
     }
     

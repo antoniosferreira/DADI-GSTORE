@@ -37,11 +37,12 @@ namespace GSTORE_Server
             Console.WriteLine("##### GSTORE-SERVER RUNNING  #####");
            
             // Starts Storage Service to Clients 
-            StorageServer storageServer = new StorageServer();
+            StorageServer storageServer = new StorageServer(ServerID);
             Server server = new Server
             {
                 Services = { StorageServerServices.BindService(new StorageServerService(storageServer)),
-                            ServerServices.BindService(new ServerService(storageServer))},
+                            ServerServices.BindService(new ServerService(storageServer)),
+                            ServerCommunicationServices.BindService(new ServerCommunicationService(storageServer))},
                 Ports = { new ServerPort(ServerURL, ServerPort, ServerCredentials.Insecure) }
             };
             server.Start();
