@@ -8,10 +8,10 @@ namespace GSTORE_Server
     class StorageServerService : StorageServerServices.StorageServerServicesBase
     {
 
-        private StorageServer _server;
+        private GSServer Server;
 
-        public StorageServerService(StorageServer server) {
-            _server = server;
+        public StorageServerService(in GSServer server) {
+            Server = server;
         }
 
 
@@ -26,7 +26,7 @@ namespace GSTORE_Server
             bool success;
             string value;
 
-            (success, value) = _server.Read(request.PartitionID, request.ObjectID);
+            (success, value) = Server.StorageServer.Read(request.PartitionID, request.ObjectID);
             
             return new ReadReply
             {
@@ -46,8 +46,8 @@ namespace GSTORE_Server
         {
             bool success = false;
             string sid = "-1";
-            
-            (success, sid)= _server.Write(request.PartitionID, request.ObjectID, request.Value);
+
+            (success, sid)= Server.StorageServer.Write(request.PartitionID, request.ObjectID, request.Value);
 
             return new WriteReply
             {

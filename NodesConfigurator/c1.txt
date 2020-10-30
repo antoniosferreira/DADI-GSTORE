@@ -1,4 +1,1 @@
-﻿write p3 00 s2
-write p1 00 s1
-read p1 00 s1
-read p3 00 s2
+﻿write P01 00 s2

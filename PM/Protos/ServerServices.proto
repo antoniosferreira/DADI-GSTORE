@@ -5,6 +5,7 @@ option csharp_namespace = "PM";
 package gstoreservices;
 
 service ServerServices {
+	rpc Partition (PartitionRequest) returns (Empty);
 	rpc Status (Empty) returns (Empty);
 	rpc Freeze (Empty) returns (Empty);
 	rpc Unfreeze (Empty) returns (Empty);
@@ -12,3 +13,8 @@ service ServerServices {
 }
 
 message Empty {} 
+
+message PartitionRequest {
+	string partitionID = 1;
+	repeated string servers = 2; 
+}

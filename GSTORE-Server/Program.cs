@@ -28,7 +28,6 @@ namespace GSTORE_Server
 
                 GSServer server = new GSServer(ServerID, ServerURL, ServerPort, MinDelay, MaxDelay);
                 server.Start();
-                Console.ReadLine();
 
             }
             catch (Exception e)

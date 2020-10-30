@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Grpc.Core;
 using GSTORE_Server.Storage;
@@ -8,11 +9,25 @@ namespace GSTORE_Server
     class ServerService : ServerServices.ServerServicesBase
     {
 
-        private StorageServer _server;
+        private GSServer Server;
 
-        public ServerService(StorageServer server) {
-            _server = server;
+        public ServerService(in GSServer server) {
+            Server = server;
         }
+
+        // PARTITION OPERATION
+        public override Task<Empty> Partition(PartitionRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessPartition(request)); ;
+        }
+
+        private Empty ProcessPartition(PartitionRequest request)
+        {
+            List<string> servers = new List<string>(request.Servers);
+            Server.StorageServer.NewPartition(request.PartitionID, servers);
+            return new Empty { };
+        }
+
 
 
         // CRASH OPERATION
@@ -31,7 +46,7 @@ namespace GSTORE_Server
 
         private Empty ProcessStatus()
         {
-            _server.PrintStatus();
+            Server.StorageServer.PrintStatus();
             return new Empty { };
         }
         // FREEZE OPERATION
@@ -43,7 +58,7 @@ namespace GSTORE_Server
         private Empty ProcessFreeze()
         {
             Console.WriteLine("ProcessFreeze");
-            _server.Freeze();
+            Server.StorageServer.Freeze();
             return new Empty { } ;
         }
 
@@ -56,7 +71,7 @@ namespace GSTORE_Server
         private Empty ProcessUnfreeze()
         {
             Console.WriteLine("ProcessUnfreeze");
-            _server.Unfreeze();
+            Server.StorageServer.Unfreeze();
             return new Empty { };
         }
 

@@ -60,7 +60,7 @@ namespace GSTORE_Client.Commands
 
             } catch (Exception e)
             {
-                Console.WriteLine(e.StackTrace);
+                Console.WriteLine("Write failed");
             }
 
         }

@@ -7,6 +7,9 @@ namespace GSTORE_Server
 {
     public class GSServer
     {
+        public StorageServer StorageServer { get;  }
+
+
         // Server Configuration Information
         public string ServerID { get { return _serverID; } }
         private readonly string _serverID;
@@ -19,6 +22,7 @@ namespace GSTORE_Server
         public int MaxDelay { get { return _maxDelay; } }
         private readonly int _maxDelay;
 
+
         public GSServer(string serverID, string serverURL, int serverPort, int minDelay, int maxDelay)
         {
             Console.WriteLine("#####   CONFIGURING GSTORE-SERVER   #####");
@@ -29,6 +33,8 @@ namespace GSTORE_Server
             _serverPort = serverPort;
             _minDelay = minDelay;
             _maxDelay = maxDelay;
+
+             StorageServer = new StorageServer(ServerID);
         }
 
 
@@ -37,12 +43,11 @@ namespace GSTORE_Server
             Console.WriteLine("##### GSTORE-SERVER RUNNING  #####");
            
             // Starts Storage Service to Clients 
-            StorageServer storageServer = new StorageServer(ServerID);
             Server server = new Server
             {
-                Services = { StorageServerServices.BindService(new StorageServerService(storageServer)),
-                            ServerServices.BindService(new ServerService(storageServer)),
-                            ServerCommunicationServices.BindService(new ServerCommunicationService(storageServer))},
+                Services = { StorageServerServices.BindService(new StorageServerService(this)),
+                            ServerServices.BindService(new ServerService(this)),
+                            ServerCommunicationServices.BindService(new ServerCommunicationService(this))},
                 Ports = { new ServerPort(ServerURL, ServerPort, ServerCredentials.Insecure) }
             };
             server.Start();

@@ -24,7 +24,7 @@ namespace PM.Commands
         {
             try
             {
-                List<ServerServices.ServerServicesClient> serversList = PuppetMaster.NodesCommunicator.GetAllServers();
+                List<ServerServices.ServerServicesClient> serversList = PuppetMaster.NodesCommunicator.GetAllServersClients();
                 List<ServerServices.ServerServicesClient> clientsList = PuppetMaster.NodesCommunicator.GetAllClients();
 
                 foreach (ServerServices.ServerServicesClient server in serversList)

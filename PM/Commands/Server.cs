@@ -6,11 +6,12 @@ namespace PM.Commands
     class Server : Command
     {
         private PCSServices.PCSServicesClient PCSClient;
+        private PM PuppetMaster;
 
-        public Server(PCSServices.PCSServicesClient client)
+        public Server(PCSServices.PCSServicesClient client, PM pm)
         {
             PCSClient = client;
-
+            PuppetMaster = pm;
             Description = "Server <serverID> <serverURL> <minDelay> <maxDelay>";
             Rule = new Regex(
                 @"Server (?<sid>\w+)\s+(?<URL>[^ ]+)\s+(?<mind>\d+)\s+(?<maxd>\d+).*",
@@ -35,6 +36,7 @@ namespace PM.Commands
                          MinDelay = minDelay,
                          MaxDelay = maxDelay});
 
+                PuppetMaster.NodesCommunicator.ActivateServer(serverID);
 
             }
             catch (Exception e)

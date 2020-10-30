@@ -8,11 +8,11 @@ namespace PM
 {
     class PM
     {
-        public const string PCSUrl = "http://localhost:10000";
         public PCSServices.PCSServicesClient PCSClient;
+        public const string PCSUrl = "http://localhost:10000";
       
-        private List<Command> Commands;
 
+        private List<Command> Commands;
         public NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
         public PM()
@@ -23,16 +23,17 @@ namespace PM
 
             Commands = new List<Command>
             {
-                new Server(PCSClient),
+                new Server(PCSClient, this),
                 new Client(PCSClient),
-
                 new ReplicationFactor(this),
                 new Partition(this),
                 new Crash(this),
                 new Unfreeze(this),
                 new Freeze(this),
                 new Status(this),
-                new Wait()
+                new Wait(),
+                new Exit()
+
             };
         }
 
@@ -44,7 +45,6 @@ namespace PM
                 if (cmd.Check(command))
                 {
                     cmd.Exec(command);
-                    //return cmd.GetType() != typeof(Exit);
                     return true;
                 }
             }

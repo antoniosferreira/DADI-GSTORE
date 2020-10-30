@@ -12,16 +12,14 @@ namespace PCS
         public PCSService() { }
 
 
-
-
         // INIT SERVER OPERATION
         public override Task<Void> InitServer(ServerRequest request, ServerCallContext context)
         {
             Process serverProcess = new Process();
 
-            // Finds GSTORE-SERVER executable
             try
             {
+                // Finds GSTORE-SERVER executable
                 string executablePath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\GSTORE-SERVER\\bin\\Debug\\netcoreapp3.1\\GSTORE-Server.exe";
 
                 serverProcess.StartInfo.UseShellExecute = true;
@@ -48,9 +46,9 @@ namespace PCS
 
             Process serverProcess = new Process();
 
-            // Finds GSTORE-Client executable
             try
             {
+                // Finds GSTORE-Client executable
                 string executablePath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\GSTORE-Client\\bin\\Debug\\netcoreapp3.1\\GSTORE-Client.exe";
 
                 serverProcess.StartInfo.UseShellExecute = true;
