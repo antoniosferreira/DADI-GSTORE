@@ -18,6 +18,7 @@ namespace GSTORE_Client.Commands
         public override void Exec(string input)
         {
             Match match = Rule.Match(input);
+            
             if (match.Success)
             {
                 int time = int.Parse(match.Groups["time"].Value);
@@ -25,7 +26,7 @@ namespace GSTORE_Client.Commands
                 return;
             }
 
-            Console.WriteLine("Failed to execute command:" + input);
+            Console.WriteLine(">>> Failed to execute command:" + input);
 
         }
     }

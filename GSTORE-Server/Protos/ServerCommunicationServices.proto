@@ -13,6 +13,7 @@ service ServerCommunicationServices {
 message LockObjectRequest {
 	string partitionID = 1;
 	string objectID = 2;
+	int32 writeID = 3;
 } 
 
 message LockObjectReply {}
@@ -21,6 +22,7 @@ message WriteObjectRequest {
 	string partitionID = 1;
 	string objectID = 2;
 	string value = 3;
+	int32 writeID = 4;
 }
 
 message WriteObjectReply {}

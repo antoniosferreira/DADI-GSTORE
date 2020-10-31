@@ -14,10 +14,10 @@ namespace PCS
 
         static void Main(string[] args)
         {
-            if (args.Length < 2)
+            if (args.Length != 1)
             {
                 Console.WriteLine("Failed to initiate the PCS module");
-                Console.WriteLine("Usage: <nodesFile> <clientScripts>");
+                Console.WriteLine("Usage: <nodesFile>");
 
                 Environment.Exit(1);
             }

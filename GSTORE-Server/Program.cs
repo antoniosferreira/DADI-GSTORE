@@ -6,7 +6,7 @@ namespace GSTORE_Server
     {
         static void Main(string[] args)
         {
-            // EVALUATES SERVER INITIAL CONFIGURATION
+            // VALIDATES SERVER INITIAL CONFIGURATION
             if (args.Length < 4)
             {
                 Console.WriteLine("Failed to initiate the server");
@@ -15,6 +15,8 @@ namespace GSTORE_Server
                 Environment.Exit(1);
             }
 
+
+            // INITIALIZES SERVER
             try
             {
                 var uri = new Uri(args[1]);
@@ -28,8 +30,8 @@ namespace GSTORE_Server
 
                 GSServer server = new GSServer(ServerID, ServerURL, ServerPort, MinDelay, MaxDelay);
                 server.Start();
-
             }
+
             catch (Exception e)
             {
                 Console.WriteLine(e.StackTrace);

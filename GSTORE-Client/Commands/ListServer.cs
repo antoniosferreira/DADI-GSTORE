@@ -25,17 +25,18 @@ namespace GSTORE_Client.Commands
 
                 try
                 {
-                    ListServerReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).ListServer(new ListServerRequest { });
+                    ListServerReply reply = Client.NodesCommunicator.GetServerClient(serverID).ListServer(new ListServerRequest { });
                     Console.WriteLine(reply.Listing);
 
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    Console.WriteLine("------- COULDN'T LIST SERVER " + serverID + " -------");
+                    Console.WriteLine(">>> Couldn't list server " + serverID);
                 }
             }
             catch (Exception e)
             {
+                Console.WriteLine(">>> Bad Input");
                 Console.WriteLine(e.StackTrace);
             }
         }

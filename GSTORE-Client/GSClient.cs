@@ -14,11 +14,13 @@ namespace GSTORE_Client
         public string ClientURL { get { return _clientURL; } }
         private readonly string _clientURL;
 
-
-        private List<Command> Commands;
-
+        // Client Communication Data
         public string CurrentServer = null;
         public NodesCommunicator NodesCommunicator = new NodesCommunicator();
+
+
+
+        private List<Command> Commands;
 
         public GSClient(string clientID, string clientURL)
         {
@@ -45,7 +47,7 @@ namespace GSTORE_Client
                     cmd.Exec(command);
                     return true;
                 }
-            Console.WriteLine("ERROR: Invalid command \"{0}\"", command);
+            Console.WriteLine(">>> ERROR: Invalid command \"{0}\"", command);
             return true;
         }
     }

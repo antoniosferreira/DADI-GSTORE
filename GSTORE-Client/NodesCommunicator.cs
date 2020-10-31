@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using NodesConfigurator;
 using Grpc.Net.Client;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace GSTORE_Client
     class NodesCommunicator
     {
 
-        private readonly Dictionary<string, StorageServerServices.StorageServerServicesClient> Servers = new Dictionary<string, StorageServerServices.StorageServerServicesClient>();
+        private readonly ConcurrentDictionary<string, StorageServerServices.StorageServerServicesClient> Servers = new ConcurrentDictionary<string, StorageServerServices.StorageServerServicesClient>();
 
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
@@ -18,12 +19,15 @@ namespace GSTORE_Client
 
         public NodesCommunicator()
         {
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
             // Establishes connection with all servers
             foreach (KeyValuePair<string, string> kvp in Nodes.GetAllServers())
             {
-                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+                Console.WriteLine("key:" + kvp.Key + "VALUE:" + kvp.Value);
+                
                 GrpcChannel channel = GrpcChannel.ForAddress(kvp.Value);
-                Servers.Add(kvp.Key, new StorageServerServices.StorageServerServicesClient(channel));
+                Servers.TryAdd(kvp.Key, new StorageServerServices.StorageServerServicesClient(channel));
             }
         }
 

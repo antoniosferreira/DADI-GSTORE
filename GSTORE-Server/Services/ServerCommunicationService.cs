@@ -16,27 +16,32 @@ namespace GSTORE_Server
         }
 
 
-        // PARTITION REQUEST
+        // PARTITION REPLICATION REQUEST
         public override Task<SuccessReply> SetPartition(SetPartitionRequest request, ServerCallContext context)
         {
             List<string> servers = new List<string>(request.AssociatedServers);
-            Server.StorageServer.InitPartition(request.PartitionID, request.MainServerID, servers);
+
+            Console.WriteLine(">>> SetPartition(" + request.PartitionID + " , " + request.MainServerID + ")");
+            Server.StorageServer.InitPartition(request.PartitionID.ToUpper(), request.MainServerID, servers);
+            
             return Task.FromResult(new SuccessReply());
         }
-
 
 
         // LOCK OBJECT
         public override Task<LockObjectReply> LockObject(LockObjectRequest request, ServerCallContext context)
         {
-            Server.StorageServer.LockObject(request.PartitionID, request.ObjectID); 
+            Console.WriteLine(">>> LockObject(" + request.PartitionID + " , " + request.ObjectID + ")");
+            Server.StorageServer.LockObject(request.PartitionID.ToUpper(), request.ObjectID, request.WriteID); 
             return Task.FromResult(new LockObjectReply { });
         }
+
 
         // WRITE OBJECT
         public override Task<WriteObjectReply> WriteObject(WriteObjectRequest request, ServerCallContext context)
         {
-            Server.StorageServer.WriteObject(request.PartitionID, request.ObjectID, request.Value);
+            Console.WriteLine(">>> WriteObject(" + request.PartitionID + " , " + request.ObjectID + " , " + request.Value + ")");
+            Server.StorageServer.WriteObject(request.PartitionID.ToUpper(), request.ObjectID, request.Value, request.WriteID);
             return Task.FromResult(new WriteObjectReply { });
         }
 

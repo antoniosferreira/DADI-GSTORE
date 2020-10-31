@@ -26,8 +26,10 @@ namespace GSTORE_Server
             bool success;
             string value;
 
-            (success, value) = Server.StorageServer.Read(request.PartitionID, request.ObjectID);
-            
+            Console.WriteLine(">>> Processing read: " + request.PartitionID + " : " + request.ObjectID);
+
+            (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
+
             return new ReadReply
             {
                 Value = value,
@@ -47,7 +49,8 @@ namespace GSTORE_Server
             bool success = false;
             string sid = "-1";
 
-            (success, sid)= Server.StorageServer.Write(request.PartitionID, request.ObjectID, request.Value);
+            Console.WriteLine(">>> Processing write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
+            (success, sid)= Server.StorageServer.Write(request.PartitionID.ToUpper(), request.ObjectID, request.Value);
 
             return new WriteReply
             {
@@ -56,5 +59,38 @@ namespace GSTORE_Server
             };
         }
 
+
+        // LIST GLOBAL OPERATION
+        public override Task<ListGlobalReply> ListGlobal(ListGlobalRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessListGlobal(request));
+        }
+        private ListGlobalReply ProcessListGlobal(ListGlobalRequest request)
+        {
+ 
+            Console.WriteLine(">>> Processing listGlobal ");
+
+            return new ListGlobalReply
+            {
+                Listing = Server.StorageServer.ListMasterPartitions()
+            };
+        }
+
+
+        // LIST SERVER OPERATION
+        public override Task<ListServerReply> ListServer(ListServerRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessListServer(request));
+        }
+        private ListServerReply ProcessListServer(ListServerRequest request)
+        {
+
+            Console.WriteLine(">>> Processing listServer ");
+
+            return new ListServerReply
+            {
+                Listing = Server.StorageServer.ListServerPartitions()
+            };
+        }
     }
 }

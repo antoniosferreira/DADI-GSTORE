@@ -58,9 +58,9 @@ namespace GSTORE_Client.Commands
 
                 } while (!writeSuccess);
 
-            } catch (Exception e)
+            } catch (Exception)
             {
-                Console.WriteLine("Write failed");
+                Console.WriteLine(">>> Failed to perform Write");
             }
 
         }
@@ -68,10 +68,9 @@ namespace GSTORE_Client.Commands
         private bool SendWriteRequest(WriteRequest request, StorageServerServices.StorageServerServicesClient server)
         {
             WriteReply reply = server.Write(request);
-
             if (reply.Success)
             {
-                Console.WriteLine(request.Value + " written into partition " + request.PartitionID + request.ObjectID);
+                Console.WriteLine(">>> (Write Success) Value : " + request.Value + " - " + request.ObjectID);
                 return true;
             } 
 

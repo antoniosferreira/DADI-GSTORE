@@ -18,7 +18,6 @@ namespace GSTORE_Client.Commands
         public override void Exec(string input)
         {
             Environment.Exit(0);
-
         }
     }
 }

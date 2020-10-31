@@ -11,6 +11,7 @@ namespace GSTORE_Client
         {
             bool run = true;
             string clientID, clientURL, clientScript = "";
+            
             if (args.Length < 2)
             {
                 Console.WriteLine("Failed to initiate the client");
@@ -21,7 +22,8 @@ namespace GSTORE_Client
                 Console.Write("clientURL:");
                 clientURL = Console.ReadLine();
             
-            } else 
+            } 
+            else 
             {
                 clientID = args[0];
                 clientURL = args[1];
@@ -34,10 +36,10 @@ namespace GSTORE_Client
             {
                 GSClient client = new GSClient(clientID, clientURL);
                 Console.WriteLine("=== CLIENT RUNNING ===");
-                Console.WriteLine("ClientID:" + clientID + " ClientURL:" + clientURL);
+                Console.WriteLine("ClientID:" + clientID + "\nClientURL:" + clientURL);
 
 
-                // Executes first script, if exists
+                // Firstly executes script, if provided
                 if (!clientScript.Equals(""))
                 {
                     string scriptPath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\NodesConfigurator\\";
@@ -54,8 +56,10 @@ namespace GSTORE_Client
                 // Parses and Executes Commands
                 do
                 {
-                    Console.Write("-->");
+
+                    Console.Write(">");
                     run = client.ParseCommand(Console.ReadLine());
+
                 } while (run);
 
             } catch (Exception e)

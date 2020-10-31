@@ -17,15 +17,22 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
+
             Match match = Rule.Match(input);
             try
             {
+                bool init = true;
+                int attempts = 0;
+
                 string partitionID = match.Groups["partitionID"].Value;
                 string objectID = match.Groups["objectID"].Value;
                 string serverID = match.Groups["serverID"].Value;
 
                 if (Client.CurrentServer == null)
+                {
                     Client.CurrentServer = serverID;
+                    init = false;
+                }
 
                 ReadRequest readRequest = new ReadRequest
                 {
@@ -33,33 +40,42 @@ namespace GSTORE_Client.Commands
                     ObjectID = objectID
                 };
 
+
                 do
                 {
                     ReadReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).Read(readRequest);
 
                     if (reply.Success)
                     {
-                        Console.WriteLine("Read " + partitionID + objectID + ": " + reply.Value);
+                        Console.WriteLine(">>> Key:" + objectID + " | Value: " + reply.Value);
                         return;
                     }
                     else
                     {
-                        if (Client.CurrentServer.Equals(serverID))
+                        // Not in the partition
+                        if (reply.Value.Equals("N/A"))
                         {
-                            Console.WriteLine("N/A");
+                            Console.WriteLine(">>> " + reply.Value);
                             return;
+
+                        // Partition not in the server
+                        } else if (reply.Value.Equals("-1")) {
+                            if (init)
+                            {
+                                Client.CurrentServer = serverID;
+                                init = false;
+                            }
+                            else
+                                Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
+                            
+                            attempts+=1;
                         }
-
-                        Client.CurrentServer = serverID;
                     }
-
                 } while (true);
-
-
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e.StackTrace);
+                Console.WriteLine(">>> Failed to perform read");
             }
         }
     }

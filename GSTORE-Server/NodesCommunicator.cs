@@ -15,7 +15,6 @@ namespace GSTORE_Server
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
 
-
         public NodesCommunicator()
         {
             // Establishes connection with all servers

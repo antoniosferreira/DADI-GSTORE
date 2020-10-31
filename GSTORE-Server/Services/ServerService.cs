@@ -24,7 +24,9 @@ namespace GSTORE_Server
         private Empty ProcessPartition(PartitionRequest request)
         {
             List<string> servers = new List<string>(request.Servers);
-            Server.StorageServer.NewPartition(request.PartitionID, servers);
+            Console.WriteLine(">>> ProcessPartition(" + request.PartitionID + ")");
+
+            Server.StorageServer.NewPartition(request.PartitionID.ToUpper(), servers);
             return new Empty { };
         }
 
@@ -33,7 +35,7 @@ namespace GSTORE_Server
         // CRASH OPERATION
         public override Task<Empty> Crash(Empty request, ServerCallContext context)
         {
-            Console.WriteLine("CRASHED");
+            Console.WriteLine(">>> JUST CRASHED");
             Environment.Exit(1);
             return null;
         }
@@ -49,6 +51,7 @@ namespace GSTORE_Server
             Server.StorageServer.PrintStatus();
             return new Empty { };
         }
+
         // FREEZE OPERATION
         public override Task<Empty> Freeze(Empty request, ServerCallContext context)
         {
@@ -57,7 +60,7 @@ namespace GSTORE_Server
 
         private Empty ProcessFreeze()
         {
-            Console.WriteLine("ProcessFreeze");
+            Console.WriteLine(">>> Process is now FREEZED!");
             Server.StorageServer.Freeze();
             return new Empty { } ;
         }
@@ -70,10 +73,9 @@ namespace GSTORE_Server
 
         private Empty ProcessUnfreeze()
         {
-            Console.WriteLine("ProcessUnfreeze");
+            Console.WriteLine(">>> Process is now UNFREEZED!");
             Server.StorageServer.Unfreeze();
             return new Empty { };
         }
-
     }
 }
