@@ -26,6 +26,7 @@ namespace GSTORE_Client
         {
             _clientID = clientID;
             _clientURL = clientURL;
+            CurrentServer = null;
 
             Commands = new List<Command>
             {
@@ -49,6 +50,12 @@ namespace GSTORE_Client
                 }
             Console.WriteLine(">>> ERROR: Invalid command \"{0}\"", command);
             return true;
+        }
+
+        public void PrintStatus()
+        {
+            string server = (CurrentServer != null) ? CurrentServer : "none";
+            Console.WriteLine(">>> Current Attached Server: " + server);
         }
     }
 }

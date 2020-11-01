@@ -1,0 +1,49 @@
+﻿write p01 01 ok
+write p02 02 ok
+write p03 03 ok
+write p04 04 ok
+write p05 05 ok
+read p04 04 ok
+read p03 04 ok
+read p02 02 ok
+read p01 01 ok
+
+Task.Run(() =>
+            {
+
+                Match match = Rule.Match(input);
+
+                try
+                {
+                    int numberServers = int.Parse(match.Groups["numberServers"].Value);
+                    List<string> serversID = PuppetMaster.NodesCommunicator.GetAllServersIDs();
+
+                    foreach (string serverID in PuppetMaster.NodesCommunicator.GetAllServersIDs())
+                    {
+
+                        List<string> serversToReplicate = new List<string>();
+
+                        int pos = serversID.IndexOf(serverID);
+                        int number = 0;
+
+                        do
+                        {
+                            pos++;
+                            if (pos >= serversID.Count)
+                                pos = 0;
+
+                            serversToReplicate.Add(serversID[pos]);
+                            number++;
+                        } while (number < numberServers);
+
+                        PartitionRequest request = new PartitionRequest { PartitionID = 'P' + serverID.Remove(0, 1) };
+                        request.Servers.Add(serversToReplicate);
+                        PuppetMaster.NodesCommunicator.GetServerClient(serverID).Partition(request);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(">>> Failed to replicate");
+                }
+            });
+        }

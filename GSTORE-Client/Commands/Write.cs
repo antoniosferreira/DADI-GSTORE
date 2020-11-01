@@ -42,6 +42,10 @@ namespace GSTORE_Client.Commands
                 {
                     Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
                     attempts += 1;
+                    if (attempts == Client.NodesCommunicator.GetServersCounter() - 1)
+                    {
+                        return;
+                    }
                 }
 
                 do
@@ -54,13 +58,19 @@ namespace GSTORE_Client.Commands
                     {
                         Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
                         attempts += 1;
+                        if (attempts == Client.NodesCommunicator.GetServersCounter() - 1)
+                        {
+                            Console.WriteLine(">>> Error writing");
+                            return;
+                        }
                     }
 
                 } while (!writeSuccess);
 
-            } catch (Exception)
+            } catch (Exception e)
             {
                 Console.WriteLine(">>> Failed to perform Write");
+                Console.WriteLine(e.StackTrace);
             }
 
         }
@@ -76,8 +86,10 @@ namespace GSTORE_Client.Commands
 
             // If received from server the master ID
             if (!reply.ServerID.Equals("-1"))
+
             {
                 Client.CurrentServer = reply.ServerID;
+
                 return SendWriteRequest(request, Client.NodesCommunicator.GetServerClient(Client.CurrentServer));
             }
 

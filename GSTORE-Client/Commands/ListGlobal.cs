@@ -2,6 +2,10 @@
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading;
+using System.Reflection.Metadata.Ecma335;
 
 namespace GSTORE_Client.Commands
 {
@@ -22,21 +26,38 @@ namespace GSTORE_Client.Commands
         {
 
             List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
-            
+            ConcurrentBag<string> listings = new ConcurrentBag<string>();
+            Semaphore semaphore = new Semaphore(1, 1);
+
+            List<Task> requestTasks = new List<Task>();
             foreach (StorageServerServices.StorageServerServicesClient server in serversList)
             {
-                Task.Run(() => {
+                Action action = () => {
                     try
                     {
-                        ListGlobalReply reply = server.ListGlobal(new ListGlobalRequest { });
-                        Console.WriteLine(reply.Listing);
-                    } catch (Exception)
+                        ListServerReply reply = server.ListServer(new ListServerRequest { });
+                        foreach (string l in reply.Listings)
+                        {
+                            semaphore.WaitOne();
+                            if (!listings.Contains(l))
+                                listings.Add(l);
+                            semaphore.Release();
+                        }
+                    } catch (Exception) 
                     {
-                        Console.WriteLine(">>> Failed to list server ");
+                        ;
                     }
+                };
 
-                });
+                Task task = new Task(action);
+                requestTasks.Add(task);
+                task.Start();
             }
+
+            Task.WaitAll(requestTasks.ToArray());
+
+            foreach (string l in listings)
+                Console.WriteLine(l);
         }
     }
 }

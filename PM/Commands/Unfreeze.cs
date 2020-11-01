@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 
 namespace PM.Commands
@@ -20,16 +21,19 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            Match match = Rule.Match(input);
-            try
+            Task.Run(() =>
             {
+                Match match = Rule.Match(input);
                 string serverID = match.Groups["serverID"].Value;
-                PuppetMaster.NodesCommunicator.GetServerClient(serverID).Unfreeze(new Empty { });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
+                try
+                {
+                    PuppetMaster.NodesCommunicator.GetServerClient(serverID).Unfreeze(new Empty { });
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(">>> Failed to unfreeze server " + serverID);
+                }
+            });
         }
     }
 }

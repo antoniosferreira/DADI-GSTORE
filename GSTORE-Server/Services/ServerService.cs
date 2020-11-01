@@ -26,7 +26,22 @@ namespace GSTORE_Server
             List<string> servers = new List<string>(request.Servers);
             Console.WriteLine(">>> ProcessPartition(" + request.PartitionID + ")");
 
-            Server.StorageServer.NewPartition(request.PartitionID.ToUpper(), servers);
+            Server.StorageServer.NewPartition(request.PartitionID, servers);
+            return new Empty { };
+        }
+
+
+        // REPLICATION OPERATION
+        public override Task<Empty> Replication(ReplicationRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessReplication(request)); 
+        }
+
+        private Empty ProcessReplication(ReplicationRequest request)
+        {
+            Console.WriteLine(">>> ProcessReplication(" + request.Factor + ")");
+
+            Server.StorageServer.Replication(request.Factor);
             return new Empty { };
         }
 

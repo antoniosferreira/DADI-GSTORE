@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option csharp_namespace = "GSTORE_Client";
+
+package gstoreservices;
+
+service ServerServices {
+	rpc Status (Empty) returns (Empty);
+}
+
+message Empty {} 

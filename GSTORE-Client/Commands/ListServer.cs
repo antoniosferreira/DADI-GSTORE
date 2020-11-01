@@ -26,7 +26,8 @@ namespace GSTORE_Client.Commands
                 try
                 {
                     ListServerReply reply = Client.NodesCommunicator.GetServerClient(serverID).ListServer(new ListServerRequest { });
-                    Console.WriteLine(reply.Listing);
+                    foreach (string s in reply.Listings)
+                        Console.WriteLine(s);
 
                 }
                 catch (Exception e)

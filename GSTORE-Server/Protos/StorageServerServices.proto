@@ -8,8 +8,6 @@ service StorageServerServices {
 	rpc Read (ReadRequest) returns (ReadReply);
 	rpc Write (WriteRequest) returns (WriteReply);
 	rpc ListServer(ListServerRequest) returns (ListServerReply);
-	rpc ListGlobal(ListGlobalRequest) returns (ListGlobalReply);
-
 }
 
 message ReadRequest {
@@ -36,11 +34,5 @@ message WriteReply {
 message ListServerRequest {}
 
 message ListServerReply {
-	string listing = 1;
-}
-
-message ListGlobalRequest {}
-
-message ListGlobalReply {
-	string listing = 1;
+	repeated string listings = 1;
 }

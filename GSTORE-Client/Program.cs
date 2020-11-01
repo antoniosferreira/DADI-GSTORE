@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.IO;
+using Grpc.Core;
+using GSTORE_Client.Commands;
 
 namespace GSTORE_Client
 {
@@ -39,6 +41,17 @@ namespace GSTORE_Client
                 Console.WriteLine("ClientID:" + clientID + "\nClientURL:" + clientURL);
 
 
+                // Inits Services
+                Uri uri = new Uri(clientURL);
+                Server server = new Server
+                {
+                    Services = { ServerServices.BindService(new StatusService(client))},
+                    Ports = { new ServerPort(uri.Host, uri.Port, ServerCredentials.Insecure) }
+                };
+                server.Start();
+
+                Console.WriteLine("Press any key to stop...");
+
                 // Firstly executes script, if provided
                 if (!clientScript.Equals(""))
                 {
@@ -61,6 +74,13 @@ namespace GSTORE_Client
                     run = client.ParseCommand(Console.ReadLine());
 
                 } while (run);
+
+
+
+
+                Console.ReadKey();
+                server.ShutdownAsync().Wait();
+                Environment.Exit(0);
 
             } catch (Exception e)
             {

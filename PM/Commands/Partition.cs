@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 
 namespace PM.Commands
@@ -21,23 +22,26 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            
-            try
+            Task.Run(() =>
             {
                 string[] parameters = input.Split(" ");
-                List<string> serversToReplicate = new List<string>();
 
-                for (int i=0; i < int.Parse(parameters[1]); i++)
-                    serversToReplicate.Add(parameters[3 + i]);
+                try
+                {
+                    List<string> serversToReplicate = new List<string>();
 
-                PartitionRequest request = new PartitionRequest { PartitionID = 'P' + parameters[2].Remove(0, 1) };
-                request.Servers.Add(serversToReplicate);
-                PuppetMaster.NodesCommunicator.GetServerClient(parameters[2]).Partition(request);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
+                    for (int i = 0; i < int.Parse(parameters[1]); i++)
+                        serversToReplicate.Add(parameters[3 + i]);
+
+                    PartitionRequest request = new PartitionRequest { PartitionID = 'P' + parameters[2].Remove(0, 1) };
+                    request.Servers.Add(serversToReplicate);
+                    PuppetMaster.NodesCommunicator.GetServerClient(parameters[3]).Partition(request);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(">>> Failed to init Partition " + parameters[3]);
+                }
+            });
         }
     }
 }

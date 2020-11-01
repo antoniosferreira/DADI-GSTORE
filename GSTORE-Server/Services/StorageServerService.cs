@@ -30,6 +30,7 @@ namespace GSTORE_Server
 
             (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
 
+            Console.WriteLine(success + value);
             return new ReadReply
             {
                 Value = value,
@@ -60,23 +61,6 @@ namespace GSTORE_Server
         }
 
 
-        // LIST GLOBAL OPERATION
-        public override Task<ListGlobalReply> ListGlobal(ListGlobalRequest request, ServerCallContext context)
-        {
-            return Task.FromResult(ProcessListGlobal(request));
-        }
-        private ListGlobalReply ProcessListGlobal(ListGlobalRequest request)
-        {
- 
-            Console.WriteLine(">>> Processing listGlobal ");
-
-            return new ListGlobalReply
-            {
-                Listing = Server.StorageServer.ListMasterPartitions()
-            };
-        }
-
-
         // LIST SERVER OPERATION
         public override Task<ListServerReply> ListServer(ListServerRequest request, ServerCallContext context)
         {
@@ -87,10 +71,10 @@ namespace GSTORE_Server
 
             Console.WriteLine(">>> Processing listServer ");
 
-            return new ListServerReply
-            {
-                Listing = Server.StorageServer.ListServerPartitions()
-            };
+            ListServerReply reply = new ListServerReply { };
+            reply.Listings.Add(Server.StorageServer.ListServerPartitions());
+
+            return reply;
         }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,11 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Protos\ServerServices.proto" />
     <None Remove="Protos\StorageServerServices.proto" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.13.0" />
+    <PackageReference Include="Grpc.Core" Version="2.33.1" />
     <PackageReference Include="Grpc.Net.Client" Version="2.32.0" />
     <PackageReference Include="Grpc.Tools" Version="2.32.0">
       <PrivateAssets>all</PrivateAssets>
@@ -24,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="Protos\ServerServices.proto" GrpcServices="Server" />
     <Protobuf Include="Protos\StorageServerServices.proto" GrpcServices="Client" />
   </ItemGroup>
 

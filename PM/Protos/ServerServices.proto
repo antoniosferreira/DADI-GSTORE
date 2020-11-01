@@ -6,6 +6,7 @@ package gstoreservices;
 
 service ServerServices {
 	rpc Partition (PartitionRequest) returns (Empty);
+	rpc Replication(Empty) returns (Empty);
 	rpc Status (Empty) returns (Empty);
 	rpc Freeze (Empty) returns (Empty);
 	rpc Unfreeze (Empty) returns (Empty);

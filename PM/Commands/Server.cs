@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace PM.Commands
 {
@@ -20,31 +21,34 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            Match match = Rule.Match(input);
-
-            try
+            Task.Run(() =>
             {
+
+                Match match = Rule.Match(input);
                 string serverID = match.Groups["sid"].Value;
                 string serverURL = match.Groups["URL"].Value;
                 int minDelay = int.Parse(match.Groups["mind"].Value);
                 int maxDelay = int.Parse(match.Groups["maxd"].Value);
 
-                PCSClient.InitServerAsync(
-                    new ServerRequest {
-                         ServerID = serverID,
-                         ServerURL = serverURL,
-                         MinDelay = minDelay,
-                         MaxDelay = maxDelay});
+                try
+                {
+                    PCSClient.InitServerAsync(
+                        new ServerRequest
+                        {
+                            ServerID = serverID,
+                            ServerURL = serverURL,
+                            MinDelay = minDelay,
+                            MaxDelay = maxDelay
+                        });
 
-                PuppetMaster.NodesCommunicator.ActivateServer(serverID);
+                    PuppetMaster.NodesCommunicator.ActivateServer(serverID);
 
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-                Console.WriteLine("Failed to execute command:" + input);
-            }
-
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(">>> Failed to initiate server " + serverID);
+                }
+            });
 
         }
     }

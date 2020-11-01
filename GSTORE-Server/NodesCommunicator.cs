@@ -10,8 +10,7 @@ namespace GSTORE_Server
     class NodesCommunicator
     {
 
-        private readonly Dictionary<string, ServerCommunicationServices.ServerCommunicationServicesClient> Servers = new Dictionary<string, ServerCommunicationServices.ServerCommunicationServicesClient>();
-
+        private readonly List<(string, ServerCommunicationServices.ServerCommunicationServicesClient)> Servers = new List<(string, ServerCommunicationServices.ServerCommunicationServicesClient)>();
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
 
@@ -22,23 +21,26 @@ namespace GSTORE_Server
             {
                 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
                 GrpcChannel channel = GrpcChannel.ForAddress(kvp.Value);
-                Servers.Add(kvp.Key, new ServerCommunicationServices.ServerCommunicationServicesClient(channel));
+                Servers.Add((kvp.Key, new ServerCommunicationServices.ServerCommunicationServicesClient(channel)));
             }
+
+            Servers.Sort();
+
         }
 
         public string GetServerIDAtIndex(int index)
         {
-            return Servers.Keys.ToList()[index];
+            return Servers[index].Item1;
         } 
 
         public ServerCommunicationServices.ServerCommunicationServicesClient GetServerClient(string id)
         {
-            return Servers[id];
+            return Servers.Where(x => x.Item1.Equals(id)).First().Item2;
         }
 
         public List<ServerCommunicationServices.ServerCommunicationServicesClient> GetAllServers()
         {
-            return Servers.Values.ToList();
+            return (List<ServerCommunicationServices.ServerCommunicationServicesClient>)Servers.Select(x => x.Item2);
         }
     }
 }

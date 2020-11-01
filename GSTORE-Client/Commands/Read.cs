@@ -11,12 +11,13 @@ namespace GSTORE_Client.Commands
 
             Description = "Read <partitionID> <objectID> <serverID>";
             Rule = new Regex(
-                @"Read (?<partitionID>\w+)\s+(?<objectID>\w+)\s+(?<serverID>\w+).*",
+                @"Read (?<partitionID>\w+)\s+(?<objectID>\w+).*",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
         }
 
         public override void Exec(string input)
         {
+            string[] sinput = input.Split(" ");
 
             Match match = Rule.Match(input);
             try
@@ -26,7 +27,7 @@ namespace GSTORE_Client.Commands
 
                 string partitionID = match.Groups["partitionID"].Value;
                 string objectID = match.Groups["objectID"].Value;
-                string serverID = match.Groups["serverID"].Value;
+                string serverID = (sinput.Length == 4) ? sinput[3] : Client.NodesCommunicator.GetServerIDAtIndex(0);
 
                 if (Client.CurrentServer == null)
                 {
@@ -67,15 +68,21 @@ namespace GSTORE_Client.Commands
                             }
                             else
                                 Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
-                            
-                            attempts+=1;
+
+                            attempts = (attempts == Client.NodesCommunicator.GetServersCounter() - 1) ? attempts + 1 : 0;
+                            if (attempts == 0)
+                            {
+                                Console.WriteLine(">>> Failed to read");
+                                return;
+                            }
                         }
                     }
                 } while (true);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Console.WriteLine(">>> Failed to perform read");
+                Console.WriteLine(e.StackTrace);
             }
         }
     }

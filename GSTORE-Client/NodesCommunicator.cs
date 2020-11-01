@@ -11,7 +11,7 @@ namespace GSTORE_Client
     class NodesCommunicator
     {
 
-        private readonly ConcurrentDictionary<string, StorageServerServices.StorageServerServicesClient> Servers = new ConcurrentDictionary<string, StorageServerServices.StorageServerServicesClient>();
+        private readonly List<(string, StorageServerServices.StorageServerServicesClient)> Servers = new List<(string, StorageServerServices.StorageServerServicesClient)>();
 
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
@@ -23,27 +23,32 @@ namespace GSTORE_Client
 
             // Establishes connection with all servers
             foreach (KeyValuePair<string, string> kvp in Nodes.GetAllServers())
-            {
-                Console.WriteLine("key:" + kvp.Key + "VALUE:" + kvp.Value);
-                
+            {                
                 GrpcChannel channel = GrpcChannel.ForAddress(kvp.Value);
-                Servers.TryAdd(kvp.Key, new StorageServerServices.StorageServerServicesClient(channel));
+                Servers.Add((kvp.Key, new StorageServerServices.StorageServerServicesClient(channel)));
             }
+
+            Servers.Sort();
+        }
+
+        public int GetServersCounter()
+        {
+            return Servers.Count;
         }
 
         public string GetServerIDAtIndex(int index)
         {
-            return Servers.Keys.ToList()[index];
-        } 
+            return Servers[index].Item1;
+        }
 
         public StorageServerServices.StorageServerServicesClient GetServerClient(string id)
         {
-            return Servers[id];
+            return Servers.Where(x => x.Item1.Equals(id)).Select(t => t.Item2).First();
         }
 
         public List<StorageServerServices.StorageServerServicesClient> GetAllServers()
         {
-            return Servers.Values.ToList();
+            return (List<StorageServerServices.StorageServerServicesClient>)Servers.Select(x => x.Item2);
         }
     }
 }

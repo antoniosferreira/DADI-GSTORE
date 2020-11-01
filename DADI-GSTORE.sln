@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PM", "PM\PM.csproj", "{75A6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodesConfigurator", "NodesConfigurator\NodesConfigurator.csproj", "{E6D8F64C-A1D0-4A2B-89E8-D534F849DB73}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GSTORE-Client", "GSTORE-Client\GSTORE-Client.csproj", "{62FACAD1-FD23-4CFD-B015-4420F75D079E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GSTORE-Client", "GSTORE-Client\GSTORE-Client.csproj", "{62FACAD1-FD23-4CFD-B015-4420F75D079E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GSTORE-Server", "GSTORE-Server\GSTORE-Server.csproj", "{5DBD3E2C-42DF-4352-89FB-846CD261CBA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GSTORE-Server", "GSTORE-Server\GSTORE-Server.csproj", "{5DBD3E2C-42DF-4352-89FB-846CD261CBA4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -23,7 +23,6 @@ namespace GSTORE_Server.Storage
         {
             MasterServerID = sid;
             AssociatedServers = servers;
-            AssociatedServers.Add(sid);
         }
 
         public void AddKeyPair(string objectID, string value, int writeID)
@@ -38,6 +37,7 @@ namespace GSTORE_Server.Storage
         {
             do { Thread.Sleep(500); } while (!(StorageLockers[objectID] == -1)) ;
 
+            Console.WriteLine("pois");
 
             if (Storage.TryGetValue(objectID, out global::System.String value))
                 return (true, value);

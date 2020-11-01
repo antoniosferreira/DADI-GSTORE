@@ -14,11 +14,11 @@ namespace GSTORE_Server.Storage
 
         // Partitions that this server stores
         private ConcurrentDictionary<string, Partition> Partitions = new ConcurrentDictionary<string, Partition>();
-        private NodesCommunicator NodesCommunicator = new NodesCommunicator();
+        static private NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
 
-        readonly object WriteLock = new object();
-        private bool WriteLocked = false;
+        static readonly object WriteLock = new object();
+        static private bool WriteLocked = false;
 
         readonly object FreezeLock = new object();
         private bool Frozen = false;
@@ -36,9 +36,12 @@ namespace GSTORE_Server.Storage
             SimulateCommunicationDelay();
 
             // This server doesn't replicate the partition
-            if (!Partitions.ContainsKey(partitionID.ToUpper()))
+            if (!Partitions.ContainsKey(partitionID))
                 return (false, "-1");
 
+            // The partitions doesnt store the object
+            if (!Partitions[partitionID].Storage.ContainsKey(objectID))
+                return (false, "-1");
 
             return Partitions[partitionID].GetValue(objectID);
         }
@@ -119,6 +122,7 @@ namespace GSTORE_Server.Storage
 
         }
 
+
         public void LockObject(string partitionID, string objectID, int writeID)
         {
             CheckFreezeLock();
@@ -126,6 +130,7 @@ namespace GSTORE_Server.Storage
 
             Partitions[partitionID].LockValue(objectID, writeID);
         }
+
 
         public void WriteObject(string partitionID, string objectID, string value, int writeID)
         {
@@ -135,6 +140,7 @@ namespace GSTORE_Server.Storage
             Partitions[partitionID].AddKeyPair(objectID, value, writeID);
             Partitions[partitionID].UnlockValue(objectID);
         }
+
 
         private void CheckFreezeLock()
         {
@@ -177,26 +183,47 @@ namespace GSTORE_Server.Storage
         }
 
 
+        public void Replication(int rfactor) { 
+            
+            foreach (KeyValuePair<string, Partition> kvp in Partitions)
+                if (kvp.Value.MasterServerID.Equals(ServerID))
+                {
+                    foreach (string serverID in kvp.Value.AssociatedServers)
+                    {
+                        SetPartitionRequest request = new SetPartitionRequest {
+                            PartitionID = kvp.Key,
+                            MainServerID = kvp.Value.MasterServerID,
+                        };
+                        request.AssociatedServers.Add(kvp.Value.AssociatedServers);
+
+                        NodesCommunicator.GetServerClient(serverID).SetPartitionAsync(request);
+                    }
+                }
+            
+        }
+
+
         public void NewPartition(string pid, List<string> servers)
         {
             CheckFreezeLock();
             SimulateCommunicationDelay();
 
             Partition partition = new Partition(ServerID, servers);
-            Partitions.TryAdd(pid, partition);
+
+            if (!Partitions.TryAdd(pid, partition))
+                Partitions[pid] = partition;
 
             // Inits Partition on Replicates
-            foreach (string serverID in servers)
-            {
-                SetPartitionRequest request = new SetPartitionRequest
-                {
-                    PartitionID = pid,
-                    MainServerID = ServerID
-                };
-
-                request.AssociatedServers.Add(servers);
-                NodesCommunicator.GetServerClient(serverID).SetPartition(request);
-            }
+            //foreach (string serverID in servers)
+            //{
+            //    SetPartitionRequest request = new SetPartitionRequest
+            //    {
+            //        PartitionID = pid,
+            //        MainServerID = ServerID
+            //    };
+            //    request.AssociatedServers.Add(servers);
+            //    NodesCommunicator.GetServerClient(serverID).SetPartition(request);
+            //}
         }
 
         public void PrintStatus()
@@ -213,38 +240,20 @@ namespace GSTORE_Server.Storage
             }
         }
 
-        public string ListMasterPartitions() 
+
+        public List<string> ListServerPartitions()
         {
             CheckFreezeLock();
             SimulateCommunicationDelay();
 
-            string listing = "";
-           
-            foreach (KeyValuePair<string, Partition> part in Partitions)
-            {
-                if (part.Value.MasterServerID.Equals(ServerID)) { 
-                    listing += "=== Partition " + part.Key + " with master server " + part.Value.MasterServerID + " ===\n";
-                    foreach (KeyValuePair<string, string> kvp in part.Value.Storage)
-                        listing += "ObjectID = " + kvp.Key + " Value = " + kvp.Value + "\n";
-                }
-            }
-
-            return listing;
-        }
-
-
-        public string ListServerPartitions()
-        {
-            CheckFreezeLock();
-            SimulateCommunicationDelay();
-
-            string listing = "";
+            List<string> listing = new List<string>();
 
             foreach (KeyValuePair<string, Partition> part in Partitions)
             {
-                listing += "=== Partition " + part.Key + " with master server " + part.Value.MasterServerID + " ===\n";
+                string partitionListing =  "=== Partition " + part.Key + " with master server " + part.Value.MasterServerID + " ===\n";
                 foreach (KeyValuePair<string, string> kvp in part.Value.Storage)
-                    listing += "ObjectID = " + kvp.Key + " Value = " + kvp.Value + "\n";
+                    partitionListing += "ObjectID = " + kvp.Key + " Value = " + kvp.Value + "\n";
+                listing.Add(partitionListing);
             }
 
             return listing;

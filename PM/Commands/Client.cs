@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace PM.Commands
 {
@@ -21,26 +22,30 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            Match match = Rule.Match(input);
-            try {
+     
+            Task.Run(() => {
+                Match match = Rule.Match(input);
                 string username = match.Groups["username"].Value;
                 string clientURL = match.Groups["URL"].Value;
                 string scriptFile = match.Groups["scriptFile"].Value;
-
-                var reply = PCSClient.InitClientAsync(
-                         new ClientRequest {
+                try
+                {
+                    var reply = PCSClient.InitClientAsync(
+                        new ClientRequest
+                        {
                             Username = username,
                             ClientUrl = clientURL,
                             ScriptFile = scriptFile,
-                         });
+                        }
+                    );
 
-                return;
+                } catch (Exception) {
+                    Console.WriteLine(">>> Failed to init client " + username);
+                }
 
-            } catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-                Console.WriteLine("Failed to execute command:" + input);
-            }
+            });
+
+             
         }
 
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 
 namespace PM.Commands
@@ -21,19 +22,21 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            Match match = Rule.Match(input);
-            try
-            {
+            Task.Run(() => {
+
+                Match match = Rule.Match(input);
                 string serverID = match.Groups["serverID"].Value;
-                PuppetMaster.NodesCommunicator.GetServerClient(serverID).Crash(new Empty { });
-            }
-            catch (Grpc.Core.RpcException e)
-            {
-                return;
-            } catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
+
+                try
+                {
+                    PuppetMaster.NodesCommunicator.GetServerClient(serverID).Crash(new Empty { });
+                }
+                catch (Exception) {
+                    Console.WriteLine(">>> Failed to crash server " + serverID);
+                }
+
+            });
+
         }
     }
 }
