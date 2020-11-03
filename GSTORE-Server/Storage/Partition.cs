@@ -47,12 +47,22 @@ namespace GSTORE_Server.Storage
 
         public void LockValue(string objectID, int writeID)
         {
-            
-            // Locks the object
-            StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => writeID);
+            try
+            {
+                // Locks the object
+                Console.WriteLine("EX1");
+                StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => oldvalue = writeID);
 
-            if (!Storage.ContainsKey(objectID))
-                Storage.TryAdd(objectID, null);
+                Console.WriteLine("EX2");
+
+                if (!Storage.ContainsKey(objectID))
+                    Storage.TryAdd(objectID, null);
+                Console.WriteLine("EX3");
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
+
         }
 
         public void UnlockValue(string objectID)

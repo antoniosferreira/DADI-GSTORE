@@ -23,12 +23,13 @@ namespace GSTORE_Client.Commands
             try
             {
                 int attempts = 0;
+                int round = 0;
+
                 bool writeSuccess = false;
 
                 string partitionID = match.Groups["partitionID"].Value;
                 string objectID = match.Groups["objectID"].Value;
                 string value = match.Groups["value"].Value;
-
 
                 // Creates Write Request
                 WriteRequest writeRequest = new WriteRequest
@@ -60,8 +61,13 @@ namespace GSTORE_Client.Commands
                         attempts += 1;
                         if (attempts == Client.NodesCommunicator.GetServersCounter() - 1)
                         {
-                            Console.WriteLine(">>> Error writing");
-                            return;
+                            attempts = 0;
+                            round += 1;
+                            if (round > 3)
+                            {
+                                Console.WriteLine(">>> Error writing");
+                                return;
+                            }
                         }
                     }
 

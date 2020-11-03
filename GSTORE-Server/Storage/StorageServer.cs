@@ -3,6 +3,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace GSTORE_Server.Storage
 {
@@ -17,7 +18,7 @@ namespace GSTORE_Server.Storage
         static private NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
 
-        static readonly object WriteLock = new object();
+        private static readonly object WriteLock = new object();
 
         readonly object FreezeLock = new object();
         private bool Frozen = false;
@@ -62,6 +63,8 @@ namespace GSTORE_Server.Storage
                     // LOCKS FURTHER WRITES
                     lock (WriteLock)
                     {
+
+
                         // Sends Lock to Every Server
                         int writeID = (new Random()).Next(0, 1000);
                         LockObjectRequest lockRequest = new LockObjectRequest
@@ -71,15 +74,29 @@ namespace GSTORE_Server.Storage
                             WriteID = writeID
                         };
 
-                        List<Task> requestTasks = new List<Task>();
-                        foreach (string serverID in Partitions[partitionID].AssociatedServers)
+
+                        try
                         {
-                            Action action = () => { LockObjectReply reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest); };
-                            Task task = new Task(action);
-                            requestTasks.Add(task);
-                            task.Start();
+                            List<Task> requestTasks = new List<Task>();
+                            foreach (string serverID in Partitions[partitionID].AssociatedServers)
+                            {
+                                Action action = () => {
+                                    try
+                                    {
+                                        LockObjectReply reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest);
+                                    } catch (Exception e)
+                                    {
+                                        Console.WriteLine(e.StackTrace);
+                                    }
+                                };
+                                Task task = new Task(action);
+                                requestTasks.Add(task);
+                                task.Start();
+                            }
+                            Task.WaitAll(requestTasks.ToArray());
+                        } catch (Exception e) {
+                            Console.WriteLine(e.StackTrace);
                         }
-                        Task.WaitAll(requestTasks.ToArray());
 
 
 
@@ -92,6 +109,8 @@ namespace GSTORE_Server.Storage
                             WriteID = writeID
                         };
 
+                        Console.WriteLine("LOCKING WRITES-4");
+
                         List<Task> writeTasks = new List<Task>();
                         foreach (string serverID in Partitions[partitionID].AssociatedServers)
                         {
@@ -101,6 +120,9 @@ namespace GSTORE_Server.Storage
                             task.Start();
                         }
                         Task.WaitAll(writeTasks.ToArray());
+
+
+                        Console.WriteLine("UNLOCKING WRITES");
                     }
 
 
@@ -118,8 +140,10 @@ namespace GSTORE_Server.Storage
             {
                 Console.WriteLine(e.StackTrace);
             }
-
+            
             return (false, "-1");
+
+
         }
 
 
@@ -128,7 +152,18 @@ namespace GSTORE_Server.Storage
             CheckFreezeLock();
             SimulateCommunicationDelay();
 
-            Partitions[partitionID].LockValue(objectID, writeID);
+            Console.WriteLine("HERE");
+            foreach (KeyValuePair<string, Partition> kvp in Partitions)
+                Console.WriteLine(kvp.Key);
+            try
+            {
+                Partitions[partitionID].LockValue(objectID, writeID);
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
+            Console.WriteLine("Hnow hERE");
+
         }
 
 
@@ -176,7 +211,6 @@ namespace GSTORE_Server.Storage
         public void InitPartition(string pid, string sid, List<string> servers)
         {
             CheckFreezeLock();
-            SimulateCommunicationDelay();
 
             Partition partition = new Partition(sid, servers);
             Partitions.TryAdd(pid, partition);
@@ -206,7 +240,6 @@ namespace GSTORE_Server.Storage
         public void NewPartition(string pid, List<string> servers)
         {
             CheckFreezeLock();
-            SimulateCommunicationDelay();
 
             Partition partition = new Partition(ServerID, servers);
 
@@ -244,7 +277,6 @@ namespace GSTORE_Server.Storage
         public List<string> ListServerPartitions()
         {
             CheckFreezeLock();
-            SimulateCommunicationDelay();
 
             List<string> listing = new List<string>();
 

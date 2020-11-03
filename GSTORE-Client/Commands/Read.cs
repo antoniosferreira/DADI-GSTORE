@@ -30,6 +30,10 @@ namespace GSTORE_Client.Commands
                 string objectID = match.Groups["objectID"].Value;
                 string serverID = (sinput.Length == 4) ? sinput[3] : Client.NodesCommunicator.GetServerIDAtIndex(0);
 
+                if (serverID.Equals("-1")) { 
+                    serverID = Client.NodesCommunicator.GetServerIDAtIndex(0);
+                }
+
                 if (Client.CurrentServer == null)
                 {
                     Client.CurrentServer = serverID;
@@ -68,15 +72,20 @@ namespace GSTORE_Client.Commands
                                 init = false;
                             }
                             else
+                            {
                                 Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
 
-                            attempts = (attempts == Client.NodesCommunicator.GetServersCounter() - 1) ? attempts + 1 : 0;
-                            if (attempts == 0)
-                            {
-                                rounds += 1;
-                                if (rounds == 3) { 
-                                    Console.WriteLine(">>> Failed to read");
-                                    return;
+                                attempts += 1;
+                                if (attempts == Client.NodesCommunicator.GetServersCounter() - 1) attempts = 0;
+                                
+                                if (attempts == 0)
+                                {
+                                    rounds += 1;
+                                    if (rounds == 3)
+                                    {
+                                        Console.WriteLine(">>> Failed to read");
+                                        return;
+                                    }
                                 }
                             }
                         }

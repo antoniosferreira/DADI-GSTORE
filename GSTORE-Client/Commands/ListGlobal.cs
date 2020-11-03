@@ -24,7 +24,6 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
-
             List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
             ConcurrentBag<string> listings = new ConcurrentBag<string>();
             Semaphore semaphore = new Semaphore(1, 1);

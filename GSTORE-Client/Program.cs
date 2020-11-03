@@ -2,7 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.IO;
 using Grpc.Core;
-using GSTORE_Client.Commands;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace GSTORE_Client
 {
@@ -52,26 +53,108 @@ namespace GSTORE_Client
 
                 Console.WriteLine("Press any key to stop...");
 
+
+
+
+                List<string> repeatInstruction = new List<string> { };
+                bool cycle = false;
+                int cycles = 0;
+
+
+
+
                 // Firstly executes script, if provided
                 if (!clientScript.Equals(""))
                 {
                     string scriptPath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\NodesConfigurator\\";
                     clientScript = scriptPath + clientScript + ".txt";
 
+                    
                     string[] commands = System.IO.File.ReadAllLines(clientScript);
                     foreach (string command in commands)
                     {
-                        Console.WriteLine("{0}", command);
-                        client.ParseCommand(command);
+                        if (command.Contains("begin-repeat")) {
+                            repeatInstruction.Clear();
+
+                            cycles = Int32.Parse(Regex.Match(command, @"\d+").Value);
+                            cycle = true;
+                        }
+
+                        else if (command.Contains("end-repeat")) {
+
+
+                            for (int i =0; i<cycles; i++)
+                            {
+                                List<string> finalCommand = new List<string> { };
+                                foreach (string s in repeatInstruction)
+                                    finalCommand.Add(s.Replace("$i", "" + i));
+                                
+                                foreach (string s in finalCommand)
+                                {
+                                    Console.WriteLine("{0}", s);
+                                    client.ParseCommand(s);
+                                }
+                            }
+                            
+                            cycle = false;
+                            
+                        } else
+                        {
+                            if (cycle) repeatInstruction.Add(command);
+                            else
+                            {
+                                Console.WriteLine("{0}", command);
+                                client.ParseCommand(command);
+                            }
+                        } 
                     }
                 }
 
-                // Parses and Executes Commands
                 do
                 {
-
                     Console.Write(">");
-                    run = client.ParseCommand(Console.ReadLine());
+
+                    string command = Console.ReadLine();
+                    
+                    if (command.Contains("begin-repeat"))
+                    {
+                        repeatInstruction.Clear();
+
+                        cycles = Int32.Parse(Regex.Match(command, @"\d+").Value);
+                        cycle = true;
+
+                        Console.Write(">");
+                    }
+                    else if (command.Contains("end-repeat"))
+                    {
+
+                        for (int i = 0; i < cycles; i++)
+                        {
+                            List<string> finalCommand = new List<string> { };
+                            foreach (string s in repeatInstruction)
+                                finalCommand.Add(s.Replace("$i", "" + i));
+
+                            foreach (string s in finalCommand)
+                            {
+                                Console.WriteLine("{0}", s);
+                                client.ParseCommand(s);
+                            }
+                        }
+
+                        cycle = false;
+
+                    }
+                    else
+                    {
+                        if (cycle) {
+                            repeatInstruction.Add(command); 
+                        }
+                        else
+                        {
+                            Console.WriteLine("{0}", command);
+                            run = client.ParseCommand(command);
+                        }
+                    }
 
                 } while (run);
 
