@@ -30,7 +30,6 @@ namespace GSTORE_Server
 
             (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
 
-            Console.WriteLine(success + value);
             return new ReadReply
             {
                 Value = value,

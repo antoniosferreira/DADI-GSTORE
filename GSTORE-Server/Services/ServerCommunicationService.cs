@@ -31,7 +31,7 @@ namespace GSTORE_Server
         // LOCK OBJECT
         public override Task<LockObjectReply> LockObject(LockObjectRequest request, ServerCallContext context)
         {
-            Console.WriteLine(">>> LockObject(" + request.PartitionID + " , " + request.ObjectID + ")");
+            Console.WriteLine(">>> LockObject(" + request.PartitionID + " , " + request.ObjectID + " WriteID:"  +request.WriteID + ")");
             Server.StorageServer.LockObject(request.PartitionID.ToUpper(), request.ObjectID, request.WriteID); 
             return Task.FromResult(new LockObjectReply { });
         }

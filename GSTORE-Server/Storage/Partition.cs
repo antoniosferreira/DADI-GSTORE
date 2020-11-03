@@ -5,6 +5,7 @@ using System.Threading;
 
 using System.Text;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
 namespace GSTORE_Server.Storage
 {
@@ -18,6 +19,7 @@ namespace GSTORE_Server.Storage
         public readonly ConcurrentDictionary<string, string> Storage = new ConcurrentDictionary<string, string>();
         public readonly ConcurrentDictionary<string, int> StorageLockers = new ConcurrentDictionary<string, int>();
 
+        static Object lockObj = new Object();
 
         public Partition(string sid, List<String> servers)
         {
@@ -37,8 +39,6 @@ namespace GSTORE_Server.Storage
         {
             do { Thread.Sleep(500); } while (!(StorageLockers[objectID] == -1)) ;
 
-            Console.WriteLine("pois");
-
             if (Storage.TryGetValue(objectID, out global::System.String value))
                 return (true, value);
 
@@ -47,6 +47,7 @@ namespace GSTORE_Server.Storage
 
         public void LockValue(string objectID, int writeID)
         {
+            
             // Locks the object
             StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => writeID);
 

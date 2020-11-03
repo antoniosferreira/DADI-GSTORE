@@ -24,6 +24,7 @@ namespace GSTORE_Client.Commands
             {
                 bool init = true;
                 int attempts = 0;
+                int rounds = 0;
 
                 string partitionID = match.Groups["partitionID"].Value;
                 string objectID = match.Groups["objectID"].Value;
@@ -72,8 +73,11 @@ namespace GSTORE_Client.Commands
                             attempts = (attempts == Client.NodesCommunicator.GetServersCounter() - 1) ? attempts + 1 : 0;
                             if (attempts == 0)
                             {
-                                Console.WriteLine(">>> Failed to read");
-                                return;
+                                rounds += 1;
+                                if (rounds == 3) { 
+                                    Console.WriteLine(">>> Failed to read");
+                                    return;
+                                }
                             }
                         }
                     }

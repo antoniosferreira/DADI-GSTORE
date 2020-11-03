@@ -1,4 +1,4 @@
-SERVER s01 http://localhost:2001 0 0
+SERVER s01 http://localhost:2001 1000 2000
 wait 1000
 SERVER s02 http://localhost:2002 0 0
 wait 1000
@@ -14,3 +14,4 @@ partition 3 p02 s02 s04 s05
 wait 1000
 replicationfactor 2
 CLIENT c01 http://localhost:3001 c1
+CLIENT c02 http://localhost:3002 c2

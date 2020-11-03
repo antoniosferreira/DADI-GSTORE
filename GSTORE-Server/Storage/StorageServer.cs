@@ -18,7 +18,6 @@ namespace GSTORE_Server.Storage
 
 
         static readonly object WriteLock = new object();
-        static private bool WriteLocked = false;
 
         readonly object FreezeLock = new object();
         private bool Frozen = false;
@@ -52,74 +51,75 @@ namespace GSTORE_Server.Storage
             CheckFreezeLock();
             SimulateCommunicationDelay();
 
-
-            if (!Partitions.ContainsKey(partitionID))
-                return (false, "-1");
-
-            if (Partitions[partitionID].MasterServerID.Equals(ServerID))
+            try
             {
+                if (!Partitions.ContainsKey(partitionID))
+                    return (false, "-1");
 
-                // LOCKS FURTHER WRITES
-                lock (WriteLock)
-                    WriteLocked = true;
-
-
-                // Sends Lock to Every Server
-                int writeID = (new Random()).Next(0, 1000);
-                LockObjectRequest lockRequest = new LockObjectRequest
+                if (Partitions[partitionID].MasterServerID.Equals(ServerID))
                 {
-                    PartitionID = partitionID,
-                    ObjectID = objectID,
-                    WriteID = writeID
-                };
 
-                List<Task> requestTasks = new List<Task>();
-                foreach (string serverID in Partitions[partitionID].AssociatedServers)
-                {
-                    Action action = () => { LockObjectReply reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest); };
-                    Task task = new Task(action);
-                    requestTasks.Add(task);
-                    task.Start();
+                    // LOCKS FURTHER WRITES
+                    lock (WriteLock)
+                    {
+                        // Sends Lock to Every Server
+                        int writeID = (new Random()).Next(0, 1000);
+                        LockObjectRequest lockRequest = new LockObjectRequest
+                        {
+                            PartitionID = partitionID,
+                            ObjectID = objectID,
+                            WriteID = writeID
+                        };
+
+                        List<Task> requestTasks = new List<Task>();
+                        foreach (string serverID in Partitions[partitionID].AssociatedServers)
+                        {
+                            Action action = () => { LockObjectReply reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest); };
+                            Task task = new Task(action);
+                            requestTasks.Add(task);
+                            task.Start();
+                        }
+                        Task.WaitAll(requestTasks.ToArray());
+
+
+
+                        // Sends Write to Every Server
+                        WriteObjectRequest writeRequest = new WriteObjectRequest
+                        {
+                            PartitionID = partitionID,
+                            ObjectID = objectID,
+                            Value = value,
+                            WriteID = writeID
+                        };
+
+                        List<Task> writeTasks = new List<Task>();
+                        foreach (string serverID in Partitions[partitionID].AssociatedServers)
+                        {
+                            Action action = () => { WriteObjectReply reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest); };
+                            Task task = new Task(action);
+                            writeTasks.Add(task);
+                            task.Start();
+                        }
+                        Task.WaitAll(writeTasks.ToArray());
+                    }
+
+
+                    // Write success
+                    return (true, "-1");
+  
                 }
-                Task.WaitAll(requestTasks.ToArray());
-
-
-
-                // Sends Write to Every Server
-                WriteObjectRequest writeRequest = new WriteObjectRequest
+                else
                 {
-                    PartitionID = partitionID,
-                    ObjectID = objectID,
-                    Value = value,
-                    WriteID = writeID
-                };
-
-                List<Task> writeTasks = new List<Task>();
-                foreach (string serverID in Partitions[partitionID].AssociatedServers)
-                {
-                    Action action = () => { WriteObjectReply reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest); };
-                    Task task = new Task(action);
-                    writeTasks.Add(task);
-                    task.Start();
-                }
-                Task.WaitAll(writeTasks.ToArray());
-
-
-                // UNLOCKS FURTHER WRITES
-                lock (WriteLock)
-                {
-                    WriteLocked = false;
-                    Monitor.PulseAll(WriteLock);
+                    // write failed, but we can redirect the client to correct server
+                    return (false, Partitions[partitionID].MasterServerID);
                 }
 
-                // Write success
-                return (true, "-1");
-            } else
+            } catch (Exception e)
             {
-                // write failed, but we can redirect the client to correct server
-                return (false, Partitions[partitionID].MasterServerID);
+                Console.WriteLine(e.StackTrace);
             }
 
+            return (false, "-1");
         }
 
 
