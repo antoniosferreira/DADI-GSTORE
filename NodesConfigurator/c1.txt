@@ -1,2 +1,1 @@
-﻿write p01 01 ok1
-read p01 01 s01
+﻿

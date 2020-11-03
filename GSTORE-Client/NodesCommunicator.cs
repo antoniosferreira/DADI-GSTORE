@@ -16,7 +16,6 @@ namespace GSTORE_Client
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
 
-
         public NodesCommunicator()
         {
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
@@ -48,7 +47,7 @@ namespace GSTORE_Client
 
         public List<StorageServerServices.StorageServerServicesClient> GetAllServers()
         {
-            return (List<StorageServerServices.StorageServerServicesClient>)Servers.Select(x => x.Item2);
+            return Servers.Select(x => x.Item2).ToList();
         }
     }
 }

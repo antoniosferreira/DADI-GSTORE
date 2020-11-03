@@ -6,7 +6,6 @@ namespace GSTORE_Client.Commands
 {
     class Exit : Command
     {
-
         public Exit()
         {
             Description = "Exit";

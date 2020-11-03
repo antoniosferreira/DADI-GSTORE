@@ -24,39 +24,39 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
-            List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
-            ConcurrentBag<string> listings = new ConcurrentBag<string>();
-            Semaphore semaphore = new Semaphore(1, 1);
-
-            List<Task> requestTasks = new List<Task>();
-            foreach (StorageServerServices.StorageServerServicesClient server in serversList)
+            try
             {
-                Action action = () => {
-                    try
-                    {
+                List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
+                List<Task> requestTasks = new List<Task>();
+                List<string> listings = new List<string>();
+
+                foreach (StorageServerServices.StorageServerServicesClient server in serversList)
+                {
+                    Action action = () => {
                         ListServerReply reply = server.ListServer(new ListServerRequest { });
                         foreach (string l in reply.Listings)
                         {
-                            semaphore.WaitOne();
                             if (!listings.Contains(l))
-                                listings.Add(l);
-                            semaphore.Release();
+                                listings.Add(l); 
                         }
-                    } catch (Exception) 
-                    {
-                        ;
-                    }
-                };
+                    };
+                    Task task = new Task(action);
+                    requestTasks.Add(task);
+                    task.Start();
 
-                Task task = new Task(action);
-                requestTasks.Add(task);
-                task.Start();
+                    Task.WaitAll(requestTasks.ToArray());
+
+
+                    // Displays the result
+                    foreach (string l in listings.Distinct())
+                        Console.Write(l);
+                }
             }
-
-            Task.WaitAll(requestTasks.ToArray());
-
-            foreach (string l in listings)
-                Console.WriteLine(l);
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to execute command: " + input);
+                Console.WriteLine(e.StackTrace);
+            }
         }
     }
 }

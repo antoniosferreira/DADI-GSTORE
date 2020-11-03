@@ -17,17 +17,16 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
-            Match match = Rule.Match(input);
-            
-            if (match.Success)
+            try
             {
+                Match match = Rule.Match(input);
                 int time = int.Parse(match.Groups["time"].Value);
                 Thread.Sleep(time);
-                return;
+
+            } catch (Exception e) {
+                Console.WriteLine(">>> Failed to execute command:" + input);
+                Console.WriteLine(e.StackTrace);
             }
-
-            Console.WriteLine(">>> Failed to execute command:" + input);
-
         }
     }
 }

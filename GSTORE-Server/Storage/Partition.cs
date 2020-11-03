@@ -12,14 +12,13 @@ namespace GSTORE_Server.Storage
     class Partition
     { 
         public string MasterServerID { get; }
-        // Servers whom replicate this partition
         public List<String> AssociatedServers = new List<String>();
-
 
         public readonly ConcurrentDictionary<string, string> Storage = new ConcurrentDictionary<string, string>();
         public readonly ConcurrentDictionary<string, int> StorageLockers = new ConcurrentDictionary<string, int>();
 
         static Object lockObj = new Object();
+
 
         public Partition(string sid, List<String> servers)
         {
@@ -28,11 +27,9 @@ namespace GSTORE_Server.Storage
         }
 
         public void AddKeyPair(string objectID, string value, int writeID)
-        {
-            do { Thread.Sleep(500); } while (!(StorageLockers[objectID] == writeID));
-            
-            // ObjectID is inserted when lock
+        {            
             Storage[objectID] = value;
+            UnlockValue(objectID);
         }
 
         public (bool, string) GetValue(string objectID)
@@ -47,27 +44,15 @@ namespace GSTORE_Server.Storage
 
         public void LockValue(string objectID, int writeID)
         {
-            try
-            {
-                // Locks the object
-                Console.WriteLine("EX1");
-                StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => oldvalue = writeID);
+            StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => oldvalue = writeID);
 
-                Console.WriteLine("EX2");
-
-                if (!Storage.ContainsKey(objectID))
-                    Storage.TryAdd(objectID, null);
-                Console.WriteLine("EX3");
-            } catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-            }
-
+            if (!Storage.ContainsKey(objectID))
+                Storage.TryAdd(objectID, null);
         }
 
         public void UnlockValue(string objectID)
         {
-            StorageLockers.AddOrUpdate(objectID, -1, (key, oldvalue) => -1);
+            StorageLockers.AddOrUpdate(objectID, -1, (key, oldvalue) => oldvalue = -1);
         }
     }
 }

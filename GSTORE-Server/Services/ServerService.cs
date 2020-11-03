@@ -15,7 +15,9 @@ namespace GSTORE_Server
             Server = server;
         }
 
-        // PARTITION OPERATION
+
+
+        // Creates a new Partition
         public override Task<Empty> Partition(PartitionRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessPartition(request)); ;
@@ -23,15 +25,23 @@ namespace GSTORE_Server
 
         private Empty ProcessPartition(PartitionRequest request)
         {
-            List<string> servers = new List<string>(request.Servers);
-            Console.WriteLine(">>> ProcessPartition(" + request.PartitionID + ")");
+            try
+            {
+                List<string> servers = new List<string>(request.Servers);
+                Server.StorageServer.NewPartition(request.PartitionID, servers);
+                Console.WriteLine(">>> ProcessPartition(" + request.PartitionID + ")");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> FAILED to ProcessPartition(" + request.PartitionID + ")");
+                Console.WriteLine(e.StackTrace);
+            }
 
-            Server.StorageServer.NewPartition(request.PartitionID, servers);
             return new Empty { };
         }
 
 
-        // REPLICATION OPERATION
+        // Orders replication of local partitions
         public override Task<Empty> Replication(ReplicationRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessReplication(request)); 
@@ -39,21 +49,32 @@ namespace GSTORE_Server
 
         private Empty ProcessReplication(ReplicationRequest request)
         {
-            Console.WriteLine(">>> ProcessReplication(" + request.Factor + ")");
+            try
+            {
+                Server.StorageServer.Replication(request.Factor);
+                Console.WriteLine(">>> ProcessReplication(" + request.Factor + ")");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> FAILED to ProcessReplication(" + request.Factor + ")");
+                Console.WriteLine(e.StackTrace);
+            }
 
-            Server.StorageServer.Replication(request.Factor);
             return new Empty { };
         }
+
+
 
 
 
         // CRASH OPERATION
         public override Task<Empty> Crash(Empty request, ServerCallContext context)
         {
-            Console.WriteLine(">>> JUST CRASHED");
+            Console.WriteLine(">>> JUST CRASHED!");
             Environment.Exit(1);
             return null;
         }
+
 
         // STATUS OPERATION
         public override Task<Empty> Status(Empty request, ServerCallContext context)
@@ -63,9 +84,19 @@ namespace GSTORE_Server
 
         private Empty ProcessStatus()
         {
-            Server.StorageServer.PrintStatus();
+            try
+            {
+                Server.StorageServer.PrintStatus();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to Print Status");
+                Console.WriteLine(e.StackTrace);
+            }
+
             return new Empty { };
         }
+
 
         // FREEZE OPERATION
         public override Task<Empty> Freeze(Empty request, ServerCallContext context)
@@ -75,10 +106,21 @@ namespace GSTORE_Server
 
         private Empty ProcessFreeze()
         {
-            Console.WriteLine(">>> Process is now FREEZED!");
-            Server.StorageServer.Freeze();
+            try
+            {
+                Server.StorageServer.Freeze();
+                Console.WriteLine(">>> Process is now FREEZED!");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to FREEZE the process");
+                Console.WriteLine(e.StackTrace);
+            }
+
+
             return new Empty { } ;
         }
+
 
         // UNFREEZE OPERATION
         public override Task<Empty> Unfreeze(Empty request, ServerCallContext context)
@@ -88,8 +130,18 @@ namespace GSTORE_Server
 
         private Empty ProcessUnfreeze()
         {
-            Console.WriteLine(">>> Process is now UNFREEZED!");
-            Server.StorageServer.Unfreeze();
+            try
+            {
+                Server.StorageServer.Unfreeze();
+                Console.WriteLine(">>> Process is now UNFREEZED!");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to UNFREEZE the process");
+                Console.WriteLine(e.StackTrace);
+            }
+
+
             return new Empty { };
         }
     }

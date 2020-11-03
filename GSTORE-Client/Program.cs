@@ -54,14 +54,9 @@ namespace GSTORE_Client
                 Console.WriteLine("Press any key to stop...");
 
 
-
-
                 List<string> repeatInstruction = new List<string> { };
                 bool cycle = false;
                 int cycles = 0;
-
-
-
 
                 // Firstly executes script, if provided
                 if (!clientScript.Equals(""))
@@ -136,7 +131,6 @@ namespace GSTORE_Client
 
                             foreach (string s in finalCommand)
                             {
-                                Console.WriteLine("{0}", s);
                                 client.ParseCommand(s);
                             }
                         }
@@ -157,9 +151,6 @@ namespace GSTORE_Client
                     }
 
                 } while (run);
-
-
-
 
                 Console.ReadKey();
                 server.ShutdownAsync().Wait();

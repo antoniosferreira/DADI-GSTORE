@@ -24,6 +24,5 @@ namespace GSTORE_Client
             return new Empty { };
         }
 
-
     }
 }

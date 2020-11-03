@@ -15,7 +15,7 @@ namespace GSTORE_Server
         }
 
 
-        // READ OPERATION
+        // Client's Access to Read Objects
         public override Task<ReadReply> Read(ReadRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessReadRequest(request));
@@ -23,12 +23,20 @@ namespace GSTORE_Server
 
         private ReadReply ProcessReadRequest(ReadRequest request)
         {
-            bool success;
-            string value;
+            bool success = false;
+            string value = "-1";
 
-            Console.WriteLine(">>> Processing read: " + request.PartitionID + " : " + request.ObjectID);
+            try
+            {
+                (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
+                Console.WriteLine(">>> Read Processed: " + request.PartitionID + " : " + request.ObjectID);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to Read: " + request.PartitionID + " : " + request.ObjectID);
+                Console.WriteLine(e.StackTrace);
+            }
 
-            (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
 
             return new ReadReply
             {
@@ -38,7 +46,8 @@ namespace GSTORE_Server
         }
 
 
-        // WRITE OPERATION
+
+        // Client's Access to Write Objects
         public override Task<WriteReply> Write(WriteRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessWriteRequest(request));
@@ -49,8 +58,16 @@ namespace GSTORE_Server
             bool success = false;
             string sid = "-1";
 
-            Console.WriteLine(">>> Processing write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
-            (success, sid)= Server.StorageServer.Write(request.PartitionID.ToUpper(), request.ObjectID, request.Value);
+            try
+            {
+                (success, sid) = Server.StorageServer.Write(request.PartitionID.ToUpper(), request.ObjectID, request.Value);
+                Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to process write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
+                Console.WriteLine(e.StackTrace);
+            }
 
             return new WriteReply
             {
@@ -60,18 +77,26 @@ namespace GSTORE_Server
         }
 
 
-        // LIST SERVER OPERATION
+
+        // Clients access to all stored data
         public override Task<ListServerReply> ListServer(ListServerRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessListServer(request));
         }
         private ListServerReply ProcessListServer(ListServerRequest request)
         {
-
-            Console.WriteLine(">>> Processing listServer ");
-
             ListServerReply reply = new ListServerReply { };
-            reply.Listings.Add(Server.StorageServer.ListServerPartitions());
+
+            try
+            {
+                reply.Listings.Add(Server.StorageServer.ListServerPartitions());
+                Console.WriteLine(">>> Processed listServer ");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(">>> Failed to process listServer ");
+                Console.WriteLine(e.StackTrace);
+            }
 
             return reply;
         }

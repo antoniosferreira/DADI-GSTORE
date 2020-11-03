@@ -19,7 +19,6 @@ namespace GSTORE_Client
         public NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
 
-
         private List<Command> Commands;
 
         public GSClient(string clientID, string clientURL)

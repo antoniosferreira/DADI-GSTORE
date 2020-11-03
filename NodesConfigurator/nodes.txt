@@ -1,8 +1,13 @@
-﻿SERVER s01 http://localhost:2001
+﻿SERVER s00 http://localhost:2000
+SERVER s01 http://localhost:2001
 SERVER s02 http://localhost:2002
 SERVER s03 http://localhost:2003
 SERVER s04 http://localhost:2004
 SERVER s05 http://localhost:2005
+SERVER s06 http://localhost:2006
+SERVER s07 http://localhost:2007
+SERVER s08 http://localhost:2008
+SERVER s09 http://localhost:2009
 CLIENT c01 http://localhost:3001
 CLIENT c02 http://localhost:3002
 CLIENT c03 http://localhost:3003
