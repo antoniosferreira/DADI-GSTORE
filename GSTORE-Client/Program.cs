@@ -145,7 +145,6 @@ namespace GSTORE_Client
                         }
                         else
                         {
-                            Console.WriteLine("{0}", command);
                             run = client.ParseCommand(command);
                         }
                     }

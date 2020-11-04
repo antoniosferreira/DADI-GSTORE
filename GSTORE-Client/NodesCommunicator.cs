@@ -49,5 +49,10 @@ namespace GSTORE_Client
         {
             return Servers.Select(x => x.Item2).ToList();
         }
+
+        public List<string> GetAllServersID()
+        {
+            return Servers.Select(x => x.Item1).ToList();
+        }
     }
 }

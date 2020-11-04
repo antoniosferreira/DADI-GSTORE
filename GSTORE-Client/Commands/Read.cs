@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace GSTORE_Client.Commands
 {
@@ -22,7 +23,6 @@ namespace GSTORE_Client.Commands
             Match match = Rule.Match(input);
             try
             {
-                bool init = true;
                 int attempts = 0;
                 int rounds = 0;
 
@@ -30,16 +30,25 @@ namespace GSTORE_Client.Commands
                 string objectID = match.Groups["objectID"].Value;
                 string serverID = (sinput.Length == 4) ? sinput[3] : Client.NodesCommunicator.GetServerIDAtIndex(0);
 
-                if (serverID.Equals("-1")) { 
-                    serverID = Client.NodesCommunicator.GetServerIDAtIndex(0);
-                }
 
-                if (Client.CurrentServer == null)
+                // Prepares list of servers to contact
+                List<string> serversToContact = new List<string>();
+                foreach (string sid in Client.NodesCommunicator.GetAllServersID())
+                    serversToContact.Add(sid);
+                if (!(Client.CurrentServer == null)) 
                 {
-                    Client.CurrentServer = serverID;
-                    init = false;
+                    string temp = Client.CurrentServer;
+                    serversToContact.Remove(Client.CurrentServer);
+                    serversToContact.Insert(0, temp);
+                }
+                if ((!serverID.Equals(Client.CurrentServer)) && (!serverID.Equals("-1")))
+                {
+                    serversToContact.Remove(serverID);
+                    serversToContact.Insert(1, serverID);
                 }
 
+
+                // CREATES THE REQUEST
                 ReadRequest readRequest = new ReadRequest
                 {
                     PartitionID = partitionID,
@@ -49,47 +58,56 @@ namespace GSTORE_Client.Commands
 
                 do
                 {
-                    ReadReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).Read(readRequest);
-
-                    if (reply.Success)
+                    if (rounds > 3)
                     {
-                        Console.WriteLine(">>> Key:" + objectID + " | Value: " + reply.Value);
+                        Console.WriteLine(">>> Failed to perform read");
                         return;
                     }
-                    else
+
+
+                    Client.CurrentServer = serversToContact[attempts];
+
+                    try
                     {
-                        // Not in the partition
-                        if (reply.Value.Equals("N/A"))
+                        
+                        ReadReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).Read(readRequest);
+
+                        if (reply.Success)
                         {
-                            Console.WriteLine(">>> " + reply.Value);
+                            Console.WriteLine(">>> Key:" + objectID + " | Value: " + reply.Value);
                             return;
-
-                        // Partition not in the server
-                        } else if (reply.Value.Equals("-1")) {
-                            if (init)
+                        }
+                        else
+                        {
+                            // Not in the partition
+                            if (reply.Value.Equals("N/A"))
                             {
-                                Client.CurrentServer = serverID;
-                                init = false;
+                                Console.WriteLine(">>> " + reply.Value);
+                                return;
+
+                                // Partition not in the server
                             }
-                            else
+                            else if (reply.Value.Equals("-1"))
                             {
-                                Client.CurrentServer = Client.NodesCommunicator.GetServerIDAtIndex(attempts);
-
                                 attempts += 1;
-                                if (attempts == Client.NodesCommunicator.GetServersCounter() - 1) attempts = 0;
-                                
-                                if (attempts == 0)
-                                {
+                                if (attempts == (serversToContact.Count - 1)) {
+                                    attempts += 1;
                                     rounds += 1;
-                                    if (rounds == 3)
-                                    {
-                                        Console.WriteLine(">>> Failed to read");
-                                        return;
-                                    }
                                 }
                             }
                         }
+
                     }
+                    catch (Exception) {
+                        attempts += 1;
+                        if (attempts == (serversToContact.Count - 1))
+                        {
+                            attempts += 1;
+                            rounds += 1;
+                        }
+                    }
+
+                    
                 } while (true);
             }
             catch (Exception e)

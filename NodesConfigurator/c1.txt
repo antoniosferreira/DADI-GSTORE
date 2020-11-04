@@ -1,1 +1,12 @@
-﻿
+﻿begin-repeat 3
+write p0$i 0$i ok
+end-repeat
+begin-repeat 3
+write p0$i 1$i ok
+end-repeat
+begin-repeat 3
+write p0$i 2$i ok
+end-repeat
+begin-repeat 3
+write p0$i 3$i ok
+end-repeat

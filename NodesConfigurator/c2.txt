@@ -1,1 +1,13 @@
-﻿
+﻿wait 2000
+begin-repeat 3
+read p0$i 0$i -1
+end-repeat
+begin-repeat 3
+read p0$i 0$i -1
+end-repeat
+begin-repeat 3
+read p0$i 0$i -1
+end-repeat
+begin-repeat 3
+read p0$i 0$i -1
+end-repeat

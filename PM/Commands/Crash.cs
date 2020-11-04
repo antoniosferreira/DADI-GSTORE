@@ -32,7 +32,7 @@ namespace PM.Commands
                     PuppetMaster.NodesCommunicator.GetServerClient(serverID).Crash(new Empty { });
                 }
                 catch (Exception) {
-                    Console.WriteLine(">>> Failed to crash server " + serverID);
+                    Console.WriteLine(">>> Crashed server " + serverID);
                 }
 
             });

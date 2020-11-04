@@ -1,25 +1,11 @@
 SERVER s00 http://localhost:2000 400 500
-SERVER s01 http://localhost:2001 1000 1500
+SERVER s01 http://localhost:2001 300 350
 SERVER s02 http://localhost:2002 1500 2000
-SERVER s03 http://localhost:2003 2000 3000
-SERVER s04 http://localhost:2004 400 500
-SERVER s05 http://localhost:2005 500 600
-SERVER s06 http://localhost:2006 400 500
-SERVER s07 http://localhost:2007 400 500
-SERVER s08 http://localhost:2008 400 500
-SERVER s09 http://localhost:2009 400 500
-wait 1000
-partition 3 p00 s01 s02 s03
-partition 3 p01 s02 s03 s04
-partition 3 p02 s03 s04 s05
-partition 3 p03 s04 s05 s01
-partition 3 p04 s05 s01 s02
-partition 3 p05 s01 s02 s03
-partition 3 p06 s02 s03 s04
-partition 3 p07 s03 s04 s05
-partition 3 p08 s04 s05 s01
-partition 3 p09 s05 s01 s02
-wait 1000
+wait 100
+partition 3 p00 s00 s01 s02
+partition 3 p01 s01 s02 s00
+partition 3 p02 s02 s00 s01
+wait 100
 replicationfactor 3
 CLIENT c01 http://localhost:3001 c1
 CLIENT c02 http://localhost:3002 c2
