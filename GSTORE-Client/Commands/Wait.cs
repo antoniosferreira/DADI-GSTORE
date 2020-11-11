@@ -6,7 +6,6 @@ namespace GSTORE_Client.Commands
 {
     class Wait : Command
     {
-
         public Wait()
         {
             Description = "Wait <time>";
@@ -17,16 +16,13 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
-            try
-            {
-                Match match = Rule.Match(input);
+            Match match = Rule.Match(input);
+
+            if (match.Success) {
                 int time = int.Parse(match.Groups["time"].Value);
                 Thread.Sleep(time);
-
-            } catch (Exception e) {
-                Console.WriteLine(">>> Failed to execute command:" + input);
-                Console.WriteLine(e.StackTrace);
-            }
+            } else
+                Console.WriteLine(">>> Failed to parse command Wait");
         }
     }
 }

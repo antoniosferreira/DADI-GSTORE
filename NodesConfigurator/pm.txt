@@ -1,11 +1,6 @@
-SERVER s00 http://localhost:2000 400 500
-SERVER s01 http://localhost:2001 300 350
-SERVER s02 http://localhost:2002 1500 2000
-wait 100
-partition 3 p00 s00 s01 s02
-partition 3 p01 s01 s02 s00
-partition 3 p02 s02 s00 s01
-wait 100
-replicationfactor 3
-CLIENT c01 http://localhost:3001 c1
-CLIENT c02 http://localhost:3002 c2
+ReplicationFactor 2
+Partition 2 p1 s1 s2
+Partition 2 part2 s2 s3
+Server s1 http://localhost:3000 0 100
+Server s2 http://localhost:4000 100 300
+Server s3 http://localhost:5000 100 200

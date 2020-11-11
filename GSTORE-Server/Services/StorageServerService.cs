@@ -7,10 +7,8 @@ namespace GSTORE_Server
 {
     class StorageServerService : StorageServerServices.StorageServerServicesBase
     {
-
-        private GSServer Server;
-
-        public StorageServerService(in GSServer server) {
+        private readonly Server Server;
+        public StorageServerService(in Server server) {
             Server = server;
         }
 
@@ -20,7 +18,6 @@ namespace GSTORE_Server
         {
             return Task.FromResult(ProcessReadRequest(request));
         }
-
         private ReadReply ProcessReadRequest(ReadRequest request)
         {
             bool success = false;
@@ -28,7 +25,7 @@ namespace GSTORE_Server
 
             try
             {
-                (success, value) = Server.StorageServer.Read(request.PartitionID.ToUpper(), request.ObjectID);
+                (success, value) = Server.StorageServer.Read(request.PartitionID, request.ObjectID);
                 Console.WriteLine(">>> Read Processed: " + request.PartitionID + " : " + request.ObjectID);
             }
             catch (Exception e)
@@ -52,7 +49,6 @@ namespace GSTORE_Server
         {
             return Task.FromResult(ProcessWriteRequest(request));
         }
-
         private WriteReply ProcessWriteRequest(WriteRequest request)
         {
             bool success = false;
@@ -60,8 +56,8 @@ namespace GSTORE_Server
 
             try
             {
-                (success, sid) = Server.StorageServer.Write(request.PartitionID.ToUpper(), request.ObjectID, request.Value);
-                Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
+                (success, sid) = Server.StorageServer.Write(request.PartitionID, request.ObjectID, request.Value);
+                Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value + "| SUCCES:" + success);
             }
             catch (Exception e)
             {
@@ -77,13 +73,12 @@ namespace GSTORE_Server
         }
 
 
-
         // Clients access to all stored data
         public override Task<ListServerReply> ListServer(ListServerRequest request, ServerCallContext context)
         {
-            return Task.FromResult(ProcessListServer(request));
+            return Task.FromResult(ProcessListServer());
         }
-        private ListServerReply ProcessListServer(ListServerRequest request)
+        private ListServerReply ProcessListServer()
         {
             ListServerReply reply = new ListServerReply { };
 

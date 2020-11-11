@@ -2,19 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Grpc.Core;
-using GSTORE_Server.Storage;
 
 namespace GSTORE_Server
 {
-    class ServerService : ServerServices.ServerServicesBase
+    class PMService : PMServices.PMServicesBase
     {
+        private readonly Server Server;
 
-        private GSServer Server;
-
-        public ServerService(in GSServer server) {
+        public PMService(in Server server) {
             Server = server;
         }
-
 
 
         // Creates a new Partition
@@ -22,7 +19,6 @@ namespace GSTORE_Server
         {
             return Task.FromResult(ProcessPartition(request)); ;
         }
-
         private Empty ProcessPartition(PartitionRequest request)
         {
             try
@@ -41,36 +37,9 @@ namespace GSTORE_Server
         }
 
 
-        // Orders replication of local partitions
-        public override Task<Empty> Replication(ReplicationRequest request, ServerCallContext context)
-        {
-            return Task.FromResult(ProcessReplication(request)); 
-        }
-
-        private Empty ProcessReplication(ReplicationRequest request)
-        {
-            try
-            {
-                Server.StorageServer.Replication(request.Factor);
-                Console.WriteLine(">>> ProcessReplication(" + request.Factor + ")");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(">>> FAILED to ProcessReplication(" + request.Factor + ")");
-                Console.WriteLine(e.StackTrace);
-            }
-
-            return new Empty { };
-        }
-
-
-
-
-
         // CRASH OPERATION
         public override Task<Empty> Crash(Empty request, ServerCallContext context)
         {
-            Console.WriteLine(">>> JUST CRASHED!");
             Environment.Exit(1);
             return null;
         }

@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using NodesConfigurator;
 using Grpc.Net.Client;
 using System.Linq;
 
 
-namespace GSTORE_Server
+namespace GSTORE_Server.Communication
 {
     class NodesCommunicator
     {
 
-        private readonly List<(string, ServerCommunicationServices.ServerCommunicationServicesClient)> Servers = new List<(string, ServerCommunicationServices.ServerCommunicationServicesClient)>();
+        private readonly ConcurrentDictionary<string,(bool, ServerCommunicationServices.ServerCommunicationServicesClient)> Servers = new ConcurrentDictionary<string,(bool, ServerCommunicationServices.ServerCommunicationServicesClient)>();
         // Reads All nodes from config files
         private readonly Nodes Nodes = new Nodes();
 
@@ -21,26 +22,26 @@ namespace GSTORE_Server
             {
                 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
                 GrpcChannel channel = GrpcChannel.ForAddress(kvp.Value);
-                Servers.Add((kvp.Key, new ServerCommunicationServices.ServerCommunicationServicesClient(channel)));
+                Servers.TryAdd(kvp.Key, (true, new ServerCommunicationServices.ServerCommunicationServicesClient(channel)));
             }
-
-            Servers.Sort();
-
         }
 
-        public string GetServerIDAtIndex(int index)
+        public void DeactivateServer(string id)
         {
-            return Servers[index].Item1;
-        } 
+            Servers[id] = (false, Servers[id].Item2);
+        }
 
         public ServerCommunicationServices.ServerCommunicationServicesClient GetServerClient(string id)
         {
-            return Servers.Where(x => x.Item1.Equals(id)).First().Item2;
+            if (Servers[id].Item1)
+                return Servers[id].Item2;
+
+            return null;
         }
 
         public List<ServerCommunicationServices.ServerCommunicationServicesClient> GetAllServers()
         {
-            return (List<ServerCommunicationServices.ServerCommunicationServicesClient>)Servers.Select(x => x.Item2);
+            return (List<ServerCommunicationServices.ServerCommunicationServicesClient>)Servers.Where(x => x.Value.Item1).Select(x => x.Value.Item2);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace PM.Commands
 {
     class Freeze : Command
     {
-        private PM PuppetMaster;
+        private readonly PM PuppetMaster;
 
         public Freeze(PM pm)
         {
@@ -24,12 +24,18 @@ namespace PM.Commands
             Task.Run(() =>
             {
                 Match match = Rule.Match(input);
+                if (!match.Success)
+                {
+                    Console.WriteLine(">>> FAILED to parse command Crash");
+                    return; 
+                }
+
                 string serverID = match.Groups["serverID"].Value;
                 try
                 {
                     PuppetMaster.NodesCommunicator.GetServerClient(serverID).Freeze(new Empty { });
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Console.WriteLine(">>> Failed to free server " + serverID);
                 }

@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Protos\PMServices.proto" />
     <None Remove="Protos\ServerCommunicationServices.proto" />
-    <None Remove="Protos\ServerServices.proto" />
     <None Remove="Protos\StorageServerServices.proto" />
   </ItemGroup>
 
@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\ServerServices.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\PMServices.proto" GrpcServices="Server" />
     <Protobuf Include="Protos\ServerCommunicationServices.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\StorageServerServices.proto" GrpcServices="Server" />
   </ItemGroup>

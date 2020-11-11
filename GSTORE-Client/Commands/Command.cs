@@ -6,8 +6,7 @@ namespace GSTORE_Client.Commands
 {
     public abstract class Command
     {
-        internal GSClient Client;
-
+        internal Client Client;
         protected string Description;
         protected Regex Rule;
 

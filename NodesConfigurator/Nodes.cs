@@ -6,8 +6,8 @@ namespace NodesConfigurator
 {
     public class Nodes
     {
-        private Dictionary<string, string> ClientsList = new Dictionary<string, string>();
-        private Dictionary<string, string> ServersList = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> ClientsList = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> ServersList = new Dictionary<string, string>();
 
         public Nodes()
         {
@@ -25,9 +25,6 @@ namespace NodesConfigurator
                 if (words[0].Equals("CLIENT"))
                     ClientsList.Add(words[1], words[2]);
             }
-
-            
-
         }
 
         public Dictionary<string, string> GetAllServers()
@@ -55,7 +52,5 @@ namespace NodesConfigurator
             string nodesPath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\NodesConfigurator\\nodes.txt";
             return nodesPath;
         }
-
-
     }
 }

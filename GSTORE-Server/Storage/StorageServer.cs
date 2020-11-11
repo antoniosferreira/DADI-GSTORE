@@ -3,7 +3,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using System.Linq.Expressions;
+using GSTORE_Server.Communication;
 
 namespace GSTORE_Server.Storage
 {
@@ -12,10 +12,9 @@ namespace GSTORE_Server.Storage
         public string ServerID { get; }
         public int Delay { get; }
 
-
-        // Partitions stored 
-        private ConcurrentDictionary<string, Partition> Partitions = new ConcurrentDictionary<string, Partition>();
-        static private NodesCommunicator NodesCommunicator = new NodesCommunicator();
+        // Stored Partitions
+        private readonly ConcurrentDictionary<string, Partition> Partitions = new ConcurrentDictionary<string, Partition>();
+        private static readonly NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
         private static readonly object WriteLock = new object();
 
@@ -55,7 +54,6 @@ namespace GSTORE_Server.Storage
             if (!Partitions.ContainsKey(partitionID))
                 return (false, "-1");
 
-
             if (!Partitions[partitionID].MasterServerID.Equals(ServerID))
             {
                 // This server is not the master, but we can
@@ -81,18 +79,26 @@ namespace GSTORE_Server.Storage
                         List<Task> requestTasks = new List<Task>();
                         foreach (string serverID in Partitions[partitionID].AssociatedServers)
                         {
-                            Action action = () =>
+                            void p()
+                            {
+                                try
                                 {
-                                    LockObjectReply reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest);
-                                };
+                                    Void reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest);
+                                }
+                                catch (Exception)
+                                {
+                                    Console.WriteLine(">>> SERVER {0} FAILED", serverID);
+                                    NodesCommunicator.DeactivateServer(serverID);
+                                    Partitions[partitionID].AssociatedServers.Remove(serverID);
+                                }
+                            }
+
+                            Action action = p;
                             Task task = new Task(action);
                             requestTasks.Add(task);
                             task.Start();
                         }
-
-
                         Task.WaitAll(requestTasks.ToArray());
-
 
 
                         // Sends Write to Every Server
@@ -106,12 +112,23 @@ namespace GSTORE_Server.Storage
                         List<Task> writeTasks = new List<Task>();
                         foreach (string serverID in Partitions[partitionID].AssociatedServers)
                         {
-                            Action action = () => { WriteObjectReply reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest); };
+                            void action() { 
+                                try
+                                {
+                                    Void reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest);
+                                }
+                                catch (Exception)
+                                {
+                                    Console.WriteLine(">>> SERVER {0} FAILED", serverID);
+                                    NodesCommunicator.DeactivateServer(serverID);
+                                    Partitions[partitionID].AssociatedServers.Remove(serverID);
+                                }
+                            }
+
                             Task task = new Task(action);
                             writeTasks.Add(task);
                             task.Start();
                         }
-
                         Task.WaitAll(writeTasks.ToArray());
                     }
 
@@ -121,7 +138,7 @@ namespace GSTORE_Server.Storage
                 } catch (Exception e)
                 {
                     // Something happened with server communication
-                    Console.WriteLine("Failed to write");
+                    Console.WriteLine(">>>Failed to write");
                     Console.WriteLine(e.StackTrace);
                 }
             } 
@@ -130,48 +147,15 @@ namespace GSTORE_Server.Storage
         }
 
 
-        // Creates a new local partition
+        // Inites a new  partition
         public void NewPartition(string pid, List<string> servers)
         {
             CheckFreezeLock();
 
-            Partition partition = new Partition(ServerID, servers);
+            Partition partition = new Partition(servers[0], servers);
 
             if (!Partitions.TryAdd(pid, partition))
                 Partitions[pid] = partition;
-        }
-
-
-        // Creates a local replicate of a remote partition
-        public void InitPartition(string pid, string sid, List<string> servers)
-        {
-            Partition partition = new Partition(sid, servers);
-            Partitions.TryAdd(pid, partition);
-        }
-
-
-        // Starts replication of local partitions 
-        public void Replication(int rfactor)
-        {
-
-            foreach (KeyValuePair<string, Partition> kvp in Partitions)
-                // For every Master Local Partition
-                if (kvp.Value.MasterServerID.Equals(ServerID))
-                {
-                    // Send requests to associated servers
-                    foreach (string serverID in kvp.Value.AssociatedServers)
-                    {
-                        SetPartitionRequest request = new SetPartitionRequest
-                        {
-                            PartitionID = kvp.Key,
-                            MainServerID = kvp.Value.MasterServerID,
-                        };
-                        request.AssociatedServers.Add(kvp.Value.AssociatedServers);
-
-                        NodesCommunicator.GetServerClient(serverID).SetPartitionAsync(request);
-                    }
-                }
-
         }
 
 

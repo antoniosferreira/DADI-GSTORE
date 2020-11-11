@@ -3,10 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
-using System.Text;
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
-
 namespace GSTORE_Server.Storage
 {
     class Partition
@@ -17,9 +13,6 @@ namespace GSTORE_Server.Storage
         public readonly ConcurrentDictionary<string, string> Storage = new ConcurrentDictionary<string, string>();
         public readonly ConcurrentDictionary<string, int> StorageLockers = new ConcurrentDictionary<string, int>();
 
-        static Object lockObj = new Object();
-
-
         public Partition(string sid, List<String> servers)
         {
             MasterServerID = sid;
@@ -27,7 +20,7 @@ namespace GSTORE_Server.Storage
         }
 
         public void AddKeyPair(string objectID, string value, int writeID)
-        {            
+        {
             Storage[objectID] = value;
             UnlockValue(objectID);
         }

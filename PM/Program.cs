@@ -8,17 +8,15 @@ namespace PM
 {
     class Program
     {
-
         static void Main(string[] args)
         {
-            bool Run = true;
             if (args.Length < 1)
             {
                 Console.WriteLine("Failed to initiate the Puppet Master");
                 Console.WriteLine("Usage: <nodesFile> <pmScript>?");
 
                 Environment.Exit(1);
-           }
+            }
 
 
             PM puppet = new PM();
@@ -41,9 +39,10 @@ namespace PM
             }
 
 
+            bool Run;
             do
             {
-                Console.Write("-->");
+                Console.Write("$>");
                 Run = puppet.ParseCommand(Console.ReadLine());
             } while (Run);
         }

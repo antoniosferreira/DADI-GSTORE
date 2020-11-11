@@ -7,7 +7,7 @@ namespace PM.Commands
 {
     class Unfreeze : Command
     {
-        private PM PuppetMaster;
+        private readonly PM PuppetMaster;
 
         public Unfreeze(PM pm)
         {
@@ -24,14 +24,20 @@ namespace PM.Commands
             Task.Run(() =>
             {
                 Match match = Rule.Match(input);
+                if (!match.Success)
+                {
+                    Console.WriteLine(">>> FAILED to parse command Unfreeze");
+                    return;
+                }
+
                 string serverID = match.Groups["serverID"].Value;
                 try
                 {
                     PuppetMaster.NodesCommunicator.GetServerClient(serverID).Unfreeze(new Empty { });
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.WriteLine(">>> Failed to unfreeze server " + serverID);
+                    Console.WriteLine(">>> FAILED to unfreeze server " + serverID);
                 }
             });
         }
