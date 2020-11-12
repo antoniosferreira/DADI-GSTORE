@@ -2,10 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-
-using System.Text;
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
+using GSTORE_Server.Exceptions;
 
 namespace GSTORE_Server.Storage
 {
@@ -14,11 +11,8 @@ namespace GSTORE_Server.Storage
         public string MasterServerID { get; }
         public List<String> AssociatedServers = new List<String>();
 
-        public readonly ConcurrentDictionary<string, string> Storage = new ConcurrentDictionary<string, string>();
-        public readonly ConcurrentDictionary<string, int> StorageLockers = new ConcurrentDictionary<string, int>();
-
-        static Object lockObj = new Object();
-
+        public readonly ConcurrentDictionary<string, Item> Items = new ConcurrentDictionary<string, Item>();
+        public readonly ConcurrentDictionary<string, bool> ItemLockers = new ConcurrentDictionary<string, bool>();
 
         public Partition(string sid, List<String> servers)
         {
@@ -26,33 +20,37 @@ namespace GSTORE_Server.Storage
             AssociatedServers = servers;
         }
 
-        public void AddKeyPair(string objectID, string value, int writeID)
-        {            
-            Storage[objectID] = value;
+        public void AddItem(string objectID, string value, int TID)
+        {
+            Item item = new Item(value, TID);
+            Items.AddOrUpdate(objectID, item, (key, value) => item);
             UnlockValue(objectID);
         }
 
-        public (bool, string) GetValue(string objectID)
+        public (string, int) GetValue(string objectID)
         {
-            do { Thread.Sleep(500); } while (!(StorageLockers[objectID] == -1)) ;
+            if (ItemLockers.ContainsKey(objectID))
+            {
+                do { Thread.Sleep(500); } while (ItemLockers[objectID]);
 
-            if (Storage.TryGetValue(objectID, out global::System.String value))
-                return (true, value);
+                if (Items.TryGetValue(objectID, out Item item))
+                    return (item.GetValue(), item.GetTID());
+            }
 
-            return (false, "N/A");
+            return ("N/A", -1);
         }
 
-        public void LockValue(string objectID, int writeID)
+        public void LockValue(string objectID)
         {
-            StorageLockers.AddOrUpdate(objectID, writeID, (key, oldvalue) => oldvalue = writeID);
+            ItemLockers.AddOrUpdate(objectID, true, (key, oldvalue) => oldvalue = true);
 
-            if (!Storage.ContainsKey(objectID))
-                Storage.TryAdd(objectID, null);
+            if (!Items.ContainsKey(objectID))
+                Items.TryAdd(objectID, null);
         }
 
         public void UnlockValue(string objectID)
         {
-            StorageLockers.AddOrUpdate(objectID, -1, (key, oldvalue) => oldvalue = -1);
+            ItemLockers.AddOrUpdate(objectID, false, (key, oldvalue) => oldvalue = false);
         }
     }
 }

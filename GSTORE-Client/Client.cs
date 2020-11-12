@@ -1,30 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using Grpc.Net.Client;
 using GSTORE_Client.Commands;
-using NodesConfigurator;
+using GSTORE_Client.Communication;
 
 namespace GSTORE_Client
 {
-    class GSClient
+    class Client
     {
         // Client Configuration Information
-        public string ClientID { get { return _clientID; } }
-        private readonly string _clientID;
-        public string ClientURL { get { return _clientURL; } }
-        private readonly string _clientURL;
+        public string ClientID { get; }
+        public string ClientURL { get; }
+
 
         // Client Communication Data
         public string CurrentServer = null;
         public NodesCommunicator NodesCommunicator = new NodesCommunicator();
 
+        private readonly List<Command> Commands;
 
-        private List<Command> Commands;
-
-        public GSClient(string clientID, string clientURL)
+        public Client(string clientID, string clientURL)
         {
-            _clientID = clientID;
-            _clientURL = clientURL;
+            ClientID = clientID;
+            ClientURL = clientURL;
             CurrentServer = null;
 
             Commands = new List<Command>
@@ -53,7 +50,7 @@ namespace GSTORE_Client
 
         public void PrintStatus()
         {
-            string server = (CurrentServer != null) ? CurrentServer : "none";
+            string server = CurrentServer ?? "none";
             Console.WriteLine(">>> Current Attached Server: " + server);
         }
     }

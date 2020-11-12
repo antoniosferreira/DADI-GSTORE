@@ -2,16 +2,14 @@
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading;
-using System.Reflection.Metadata.Ecma335;
+using GSTORE_Client.Communication;
 
 namespace GSTORE_Client.Commands
 {
     class ListGlobal : Command
     {
-        public ListGlobal(GSClient client)
+        public ListGlobal(Client client)
         {
             Client = client;
 
@@ -24,38 +22,38 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
-            try
-            {
-                List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
-                List<Task> requestTasks = new List<Task>();
-                List<string> listings = new List<string>();
+            List<StorageServerServices.StorageServerServicesClient> serversList = Client.NodesCommunicator.GetAllServers();
+            List<Task> requestTasks = new List<Task>();
+            List<string> listings = new List<string>();
 
-                foreach (StorageServerServices.StorageServerServicesClient server in serversList)
+            foreach (StorageServerServices.StorageServerServicesClient server in serversList)
+            {
+                void requestServer()
                 {
-                    Action action = () => {
+                    try
+                    {
                         ListServerReply reply = server.ListServer(new ListServerRequest { });
+                        listings.Add("--------------- SERVER---------------\n");
                         foreach (string l in reply.Listings)
                         {
                             if (!listings.Contains(l))
-                                listings.Add(l); 
+                                listings.Add(l);
                         }
-                    };
-                    Task task = new Task(action);
-                    requestTasks.Add(task);
-                    task.Start();
-
-                    Task.WaitAll(requestTasks.ToArray());
-
-
-                    // Displays the result
-                    foreach (string l in listings.Distinct())
-                        Console.Write(l);
+                    } catch (Exception)
+                    {
+                        Client.NodesCommunicator.DeactivateServer(Client.CurrentServer);
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(">>> Failed to execute command: " + input);
-                Console.WriteLine(e.StackTrace);
+                
+                Task task = new Task(requestServer);
+                requestTasks.Add(task);
+                task.Start();
+
+                Task.WaitAll(requestTasks.ToArray());
+
+                // Displays the result
+                foreach (string l in listings.Distinct())
+                    Console.Write(l);
             }
         }
     }

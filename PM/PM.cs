@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+
 using Grpc.Net.Client;
 using PM.Commands;
-using NodesConfigurator;
+using PM.Communication;
 
 namespace PM
 {
     class PM
     {
+        // PM SERVICE INFORMATION
         public PCSServices.PCSServicesClient PCSClient;
         public const string PCSUrl = "http://localhost:10000";
-      
 
-        private List<Command> Commands;
+
+        private readonly List<Command> Commands;
         public NodesCommunicator NodesCommunicator = new NodesCommunicator();
+        public ConcurrentDictionary<string, List<string>> Partitions = new ConcurrentDictionary<string, List<string>>();
+        public int ReplicationFactor = -1;
+
 
         public PM()
         {
@@ -33,7 +39,6 @@ namespace PM
                 new Status(this),
                 new Wait(),
                 new Exit()
-
             };
         }
 
@@ -52,7 +57,5 @@ namespace PM
             Console.WriteLine("ERROR: Invalid command \"{0}\"", command);
             return true;
         }
-
-
     }
 }

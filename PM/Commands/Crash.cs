@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -8,7 +7,7 @@ namespace PM.Commands
 {
     class Crash : Command
     {
-        private PM PuppetMaster;
+        private readonly PM PuppetMaster;
 
         public Crash(PM pm)
         {
@@ -25,6 +24,12 @@ namespace PM.Commands
             Task.Run(() => {
 
                 Match match = Rule.Match(input);
+                if (!match.Success)
+                {
+                    Console.WriteLine(">>> FAILED to parse command Crash");
+                    return; 
+                }
+                
                 string serverID = match.Groups["serverID"].Value;
 
                 try
@@ -34,9 +39,7 @@ namespace PM.Commands
                 catch (Exception) {
                     Console.WriteLine(">>> Crashed server " + serverID);
                 }
-
             });
-
         }
     }
 }

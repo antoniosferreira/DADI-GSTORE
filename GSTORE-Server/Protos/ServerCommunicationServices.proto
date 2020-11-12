@@ -5,32 +5,30 @@ option csharp_namespace = "GSTORE_Server";
 package gstoreservices;
 
 service ServerCommunicationServices {
-	rpc SetPartition (SetPartitionRequest) returns (SuccessReply);
-	rpc LockObject (LockObjectRequest) returns (LockObjectReply);
-	rpc WriteObject (WriteObjectRequest) returns (WriteObjectReply);
+	rpc LockObject (LockObjectRequest) returns (Void);
+	rpc WriteObject (WriteObjectRequest) returns (Void);
+	rpc GetTID (TIDRequest) returns (TIDReply);
 }
 
 message LockObjectRequest {
 	string partitionID = 1;
 	string objectID = 2;
-	int32 writeID = 3;
 } 
-
-message LockObjectReply {}
 
 message WriteObjectRequest {
 	string partitionID = 1;
 	string objectID = 2;
 	string value = 3;
-	int32 writeID = 4;
+	int32 TID = 4;
 }
 
-message WriteObjectReply {}
+message Void {}
 
-message SetPartitionRequest {
+message TIDRequest {
 	string partitionID = 1;
-	string mainServerID = 2;
-	repeated string associatedServers = 3;
-}
+	string objectID = 2;
+} 
 
-message SuccessReply {}
+message TIDReply {
+	int32 TID = 1;
+} 

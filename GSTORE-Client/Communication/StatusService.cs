@@ -6,11 +6,11 @@ namespace GSTORE_Client
     class StatusService : ServerServices.ServerServicesBase
     {
 
-        private readonly GSClient _client;
+        private readonly Client Client;
 
-        public StatusService(in GSClient cl)
+        public StatusService(in Client cl)
         {
-            _client = cl;
+            Client = cl;
         }
 
         public override Task<Empty> Status(Empty request, ServerCallContext context)
@@ -20,7 +20,7 @@ namespace GSTORE_Client
 
         private Empty ProcessStatus()
         {
-            _client.PrintStatus();
+            Client.PrintStatus();
             return new Empty { };
         }
 

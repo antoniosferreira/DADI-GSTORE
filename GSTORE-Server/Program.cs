@@ -28,7 +28,7 @@ namespace GSTORE_Server
                 int MinDelay = int.Parse(args[2]);
                 int MaxDelay = int.Parse(args[3]);
 
-                GSServer server = new GSServer(ServerID, ServerURL, ServerPort, MinDelay, MaxDelay);
+                Server server = new Server(ServerID, ServerURL, ServerPort, MinDelay, MaxDelay);
                 server.Start();
             }
 

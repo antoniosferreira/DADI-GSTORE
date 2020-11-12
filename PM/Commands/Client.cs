@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -8,7 +6,7 @@ namespace PM.Commands
 {
     class Client : Command
     {
-        private PCSServices.PCSServicesClient PCSClient;
+        private readonly PCSServices.PCSServicesClient PCSClient;
 
         public Client(PCSServices.PCSServicesClient client)
         {
@@ -22,9 +20,14 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-     
             Task.Run(() => {
                 Match match = Rule.Match(input);
+
+                if (!match.Success) {
+                    Console.WriteLine(">>> FAILED to parse command Client");
+                    return; 
+                }
+
                 string username = match.Groups["username"].Value;
                 string clientURL = match.Groups["URL"].Value;
                 string scriptFile = match.Groups["scriptFile"].Value;
@@ -39,15 +42,12 @@ namespace PM.Commands
                         }
                     );
 
+                    Console.WriteLine(">>> Client {0} initiated", username);
+
                 } catch (Exception) {
                     Console.WriteLine(">>> Failed to init client " + username);
                 }
-
             });
-
-             
         }
-
-
     }
 }

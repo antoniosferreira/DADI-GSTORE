@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace PM.Commands
 {
     class Server : Command
     {
-        private PCSServices.PCSServicesClient PCSClient;
-        private PM PuppetMaster;
+        private readonly PCSServices.PCSServicesClient PCSClient;
+        private readonly PM PuppetMaster;
 
         public Server(PCSServices.PCSServicesClient client, PM pm)
         {
@@ -23,8 +25,13 @@ namespace PM.Commands
         {
             Task.Run(() =>
             {
-
                 Match match = Rule.Match(input);
+
+                if (!match.Success) {
+                    Console.WriteLine(">>> FAILED to parse Server command;");
+                    return;
+                }
+
                 string serverID = match.Groups["sid"].Value;
                 string serverURL = match.Groups["URL"].Value;
                 int minDelay = int.Parse(match.Groups["mind"].Value);
@@ -32,6 +39,7 @@ namespace PM.Commands
 
                 try
                 {
+                    // Launches Server
                     PCSClient.InitServerAsync(
                         new ServerRequest
                         {
@@ -42,14 +50,30 @@ namespace PM.Commands
                         });
 
                     PuppetMaster.NodesCommunicator.ActivateServer(serverID);
+                    Console.WriteLine(">>> Server %s launched", serverID);
+
+                    Thread.Sleep(200);
+
+                    // Launches partitions
+                    foreach (KeyValuePair<string,List<string>> kvp in PuppetMaster.Partitions)
+                    {
+                        if (kvp.Value.Contains(serverID))
+                        {
+                            PartitionRequest request = new PartitionRequest { PartitionID = kvp.Key };
+                            request.Servers.Add(kvp.Value);
+                            
+                            PuppetMaster.NodesCommunicator.GetServerClient(serverID).Partition(request);
+                        }
+                    }
+                    Console.WriteLine(">>> Replications on server {0} are launched", serverID);
+
 
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Console.WriteLine(">>> Failed to initiate server " + serverID);
+                    Console.WriteLine(">>> FAILED to execute server command" + serverID);
                 }
             });
-
         }
     }
 }

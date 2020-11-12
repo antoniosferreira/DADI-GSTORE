@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using Grpc.Core;
+using Grpc.Net.Client;
 
 
 namespace GSTORE_Client.Commands
 {
     class ListServer : Command
     {
-        public ListServer(GSClient client)
+        public ListServer(Client client)
         {
             Client = client;
 
@@ -18,21 +20,32 @@ namespace GSTORE_Client.Commands
 
         public override void Exec(string input)
         {
+            Match match = Rule.Match(input);
+
+            if (!match.Success)
+            {
+                Console.WriteLine(">>> FAILED to parse command ListServer");
+                return;
+            }
+
+            string serverID = match.Groups["serverID"].Value;
+
             try
             {
-                Match match = Rule.Match(input);
-                string serverID = match.Groups["serverID"].Value;
-
                 ListServerReply reply = Client.NodesCommunicator.GetServerClient(serverID).ListServer(new ListServerRequest { });
                 foreach (string s in reply.Listings)
                     Console.WriteLine(s);
-                
             }
-            catch (Exception e)
+            catch (RpcException)
             {
-                Console.WriteLine(">>> Failed to execute command: " + input);
-                Console.WriteLine(e.StackTrace);
+                Console.WriteLine(">>> Server %s failed", serverID);
+                Client.NodesCommunicator.DeactivateServer(serverID);
             }
+            catch (Exception)
+            {
+                Console.WriteLine(">>> Failed to execute listserver ", serverID);
+            }
+
         }
     }
 }

@@ -37,7 +37,7 @@ namespace GSTORE_Client
 
             try
             {
-                GSClient client = new GSClient(clientID, clientURL);
+                Client client = new Client(clientID, clientURL);
                 Console.WriteLine("=== CLIENT RUNNING ===");
                 Console.WriteLine("ClientID:" + clientID + "\nClientURL:" + clientURL);
 

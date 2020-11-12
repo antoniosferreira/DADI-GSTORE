@@ -1,5 +1,5 @@
-﻿SERVER s00 http://localhost:2000
-SERVER s01 http://localhost:2001
-SERVER s02 http://localhost:2002
-CLIENT c01 http://localhost:3001
-CLIENT c02 http://localhost:3002
+﻿SERVER s1 http://localhost:2001
+SERVER s2 http://localhost:2002
+SERVER s3 http://localhost:2003
+CLIENT c1 http://localhost:3001
+Client c2 http://localhost:3002

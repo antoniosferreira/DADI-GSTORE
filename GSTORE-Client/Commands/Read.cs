@@ -6,9 +6,9 @@ namespace GSTORE_Client.Commands
 {
     class Read : Command
     {
-        public Read(GSClient client)
+        public Read(Client client)
         {
-            Client = client;
+            Client = client;    
 
             Description = "Read <partitionID> <objectID> <serverID>";
             Rule = new Regex(
@@ -19,102 +19,79 @@ namespace GSTORE_Client.Commands
         public override void Exec(string input)
         {
             string[] sinput = input.Split(" ");
-
             Match match = Rule.Match(input);
-            try
+            
+            if (!match.Success)
             {
-                int attempts = 0;
-                int rounds = 0;
+                Console.WriteLine(">>> FAILED to parse command Read");
+                return;
+            }
 
-                string partitionID = match.Groups["partitionID"].Value;
-                string objectID = match.Groups["objectID"].Value;
-                string serverID = (sinput.Length == 4) ? sinput[3] : Client.NodesCommunicator.GetServerIDAtIndex(0);
+            string partitionID = match.Groups["partitionID"].Value;
+            string objectID = match.Groups["objectID"].Value;
+            string serverID = (sinput.Length == 4) ? sinput[3] : "-1";
 
+            // Prepares list of servers to contact
+            List<string> serversToContact = new List<string>();
+            foreach (string sid in Client.NodesCommunicator.GetAllServersID())
+                serversToContact.Add(sid);
+            if (!(Client.CurrentServer == null)) 
+            {
+                string temp = Client.CurrentServer;
+                serversToContact.Remove(Client.CurrentServer);
+                serversToContact.Insert(0, temp);
+            }
+            if ((!serverID.Equals(Client.CurrentServer)) && (!serverID.Equals("-1")))
+            {
+                serversToContact.Remove(serverID);
+                serversToContact.Insert(1, serverID);
+            }
 
-                // Prepares list of servers to contact
-                List<string> serversToContact = new List<string>();
-                foreach (string sid in Client.NodesCommunicator.GetAllServersID())
-                    serversToContact.Add(sid);
-                if (!(Client.CurrentServer == null)) 
+            // CREATES THE REQUEST
+            ReadRequest readRequest = new ReadRequest
+            {
+                PartitionID = partitionID,
+                ObjectID = objectID
+            };
+
+            int attempts = 0;
+
+            do
+            {
+                Client.CurrentServer = serversToContact[attempts];
+                
+                try 
                 {
-                    string temp = Client.CurrentServer;
-                    serversToContact.Remove(Client.CurrentServer);
-                    serversToContact.Insert(0, temp);
-                }
-                if ((!serverID.Equals(Client.CurrentServer)) && (!serverID.Equals("-1")))
-                {
-                    serversToContact.Remove(serverID);
-                    serversToContact.Insert(1, serverID);
-                }
+                    ReadReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).Read(readRequest);
 
-
-                // CREATES THE REQUEST
-                ReadRequest readRequest = new ReadRequest
-                {
-                    PartitionID = partitionID,
-                    ObjectID = objectID
-                };
-
-
-                do
-                {
-                    if (rounds > 3)
+                    if (reply.Success)
                     {
-                        Console.WriteLine(">>> Failed to perform read");
+                        Console.WriteLine(">>> READ -> Key:" + objectID + " WITH Value: " + reply.Value);
+                        return;
+                    }
+                    // Object not on partition
+                    else if (reply.Value.Equals("N/A"))
+                    {
+                        Console.WriteLine(">>> " + reply.Value);
                         return;
                     }
 
+                    if (attempts == (serversToContact.Count - 1))
+                        break;
 
-                    Client.CurrentServer = serversToContact[attempts];
+                    attempts += 1;
+                }
+                catch (Exception) {
+                    Console.WriteLine(">>> Server {0} failed", Client.CurrentServer);
+                    attempts += 1;
+                    Client.NodesCommunicator.DeactivateServer(Client.CurrentServer);
+                    Client.CurrentServer = null;
+                }
 
-                    try
-                    {
-                        
-                        ReadReply reply = Client.NodesCommunicator.GetServerClient(Client.CurrentServer).Read(readRequest);
+            } while (true);
 
-                        if (reply.Success)
-                        {
-                            Console.WriteLine(">>> Key:" + objectID + " | Value: " + reply.Value);
-                            return;
-                        }
-                        else
-                        {
-                            // Not in the partition
-                            if (reply.Value.Equals("N/A"))
-                            {
-                                Console.WriteLine(">>> " + reply.Value);
-                                return;
 
-                                // Partition not in the server
-                            }
-                            else if (reply.Value.Equals("-1"))
-                            {
-                                attempts += 1;
-                                if (attempts == (serversToContact.Count - 1)) {
-                                    attempts += 1;
-                                    rounds += 1;
-                                }
-                            }
-                        }
-
-                    }
-                    catch (Exception) {
-                        attempts += 1;
-                        if (attempts == (serversToContact.Count - 1))
-                        {
-                            attempts += 1;
-                            rounds += 1;
-                        }
-                    }
-
-                    
-                } while (true);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(">>> Failed to perform read");
-                Console.WriteLine(e.StackTrace);
-            }
+            Console.WriteLine(">>> N/A");
         }
     }
 }

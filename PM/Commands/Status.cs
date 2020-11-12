@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Threading.Tasks;
-
 
 namespace PM.Commands
 {
     class Status : Command
     { 
-        private PM PuppetMaster;
+        private readonly PM PuppetMaster;
 
         public Status(PM pm)
         {
@@ -25,18 +23,19 @@ namespace PM.Commands
         {
             try
             {
-                List<ServerServices.ServerServicesClient> serversList = PuppetMaster.NodesCommunicator.GetAllServersClients();
-                List<ServerServices.ServerServicesClient> clientsList = PuppetMaster.NodesCommunicator.GetAllClients();
+                List<PMServices.PMServicesClient> serversList = PuppetMaster.NodesCommunicator.GetAllServersClients();
+                List<PMServices.PMServicesClient> clientsList = PuppetMaster.NodesCommunicator.GetAllClients();
 
-                foreach (ServerServices.ServerServicesClient server in serversList)
+                foreach (PMServices.PMServicesClient server in serversList)
                     Task.Run(() => server.Status(new Empty { }));
 
-                foreach (ServerServices.ServerServicesClient client in clientsList)
+                foreach (PMServices.PMServicesClient client in clientsList)
                     Task.Run(() => client.Status(new Empty { }));
 
             }
-            catch (Grpc.Core.RpcException e)
+            catch (Grpc.Core.RpcException)
             {
+                Console.WriteLine(">>> STATUS: Some node was unreacheable");
                 return;
             }
             catch (Exception e)

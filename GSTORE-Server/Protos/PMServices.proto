@@ -1,12 +1,11 @@
 syntax = "proto3";
 
-option csharp_namespace = "PM";
+option csharp_namespace = "GSTORE_Server";
 
 package gstoreservices;
 
-service ServerServices {
+service PMServices {
 	rpc Partition (PartitionRequest) returns (Empty);
-	rpc Replication(Empty) returns (Empty);
 	rpc Status (Empty) returns (Empty);
 	rpc Freeze (Empty) returns (Empty);
 	rpc Unfreeze (Empty) returns (Empty);
