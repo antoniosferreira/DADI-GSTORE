@@ -8,7 +8,7 @@ namespace GSTORE_Server.Storage
 {
     class Partition
     { 
-        public string MasterServerID { get; }
+        public string MasterServerID { get; set; }
         public List<String> AssociatedServers = new List<String>();
 
         public readonly ConcurrentDictionary<string, Item> Items = new ConcurrentDictionary<string, Item>();

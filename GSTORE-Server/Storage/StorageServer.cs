@@ -13,11 +13,10 @@ namespace GSTORE_Server.Storage
         public int Delay { get; }
 
         private readonly ConcurrentDictionary<string, Partition> Partitions = new ConcurrentDictionary<string, Partition>();
-        private readonly ConcurrentDictionary<string, Sequentiator> Sequentiators = new ConcurrentDictionary<string, Sequentiator>();
+        private readonly ConcurrentDictionary<string, bool> PartitionsLockers = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, Sequencer> Sequencers = new ConcurrentDictionary<string, Sequencer>();
         
         private static readonly NodesCommunicator NodesCommunicator = new NodesCommunicator();
-
-        private static readonly object WriteLock = new object();
 
         readonly object FreezeLock = new object();
         private bool Frozen = false;
@@ -56,79 +55,116 @@ namespace GSTORE_Server.Storage
             {
                 // STARTS WRITING ALGORITHM
                 // LOCKS FURTHER WRITES
-                lock (WriteLock)
+                do { Thread.Sleep(500); } while (PartitionsLockers[partitionID]);
+                
+                PartitionsLockers[partitionID] = true;
+
+                
+                // GETS TID FROM SEQUENCIER
+                TIDRequest tidRequest = new TIDRequest
                 {
-                    // GETS TID FROM SEQUENTIATOR
-                    TIDRequest tidRequest = new TIDRequest
-                    {
-                        ObjectID = objectID,
-                        PartitionID = partitionID
-                    };
-                    TIDReply tidReply = NodesCommunicator.GetServerClient(Partitions[partitionID].MasterServerID).GetTID(tidRequest);
+                    ObjectID = objectID,
+                    PartitionID = partitionID
+                };
+                TIDReply tidReply = null;
 
+                try
+                {
+                    tidReply = NodesCommunicator.GetServerClient(Partitions[partitionID].MasterServerID).GetTID(tidRequest);
+                } 
+                catch (Exception)
+                {
+                    // SEQUENCER IS DOWN. ELECTIONS INVOKED
+                    Partitions[partitionID].MasterServerID = null;
+                    int attempts = 0;
 
-                    // Sends Lock to Every Server
-                    LockObjectRequest lockRequest = new LockObjectRequest
+                    do
                     {
-                        PartitionID = partitionID,
-                        ObjectID = objectID
-                    };
-                    List<Task> requestTasks = new List<Task>();
-                    foreach (string serverID in Partitions[partitionID].AssociatedServers)
-                    {
-                        void p()
+                        int pos = (Partitions[partitionID].AssociatedServers.IndexOf(ServerID) + 1 + attempts) % Partitions[partitionID].AssociatedServers.Count;
+                        attempts += 1;
+
+                        try
                         {
-                            try
-                            {
-                                Void reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest);
-                            }
-                            catch (Exception)
-                            {
-                                Console.WriteLine(">>> SERVER {0} FAILED", serverID);
-                                NodesCommunicator.DeactivateServer(serverID);
-                                Partitions[partitionID].AssociatedServers.Remove(serverID);
-                            }
+                            tidReply = NodesCommunicator.GetServerClient(Partitions[partitionID].AssociatedServers[pos]).GetTID(tidRequest);
+                            break;
                         }
-
-                        Action action = p;
-                        Task task = new Task(action);
-                        requestTasks.Add(task);
-                        task.Start();
-                    }
-                    Task.WaitAll(requestTasks.ToArray());
-
-
-                    // Sends Write to Every Server
-                    WriteObjectRequest writeRequest = new WriteObjectRequest
-                    {
-                        PartitionID = partitionID,
-                        ObjectID = objectID,
-                        Value = value,
-                        TID = tidReply.TID
-                    };
-
-                    List<Task> writeTasks = new List<Task>();
-                    foreach (string serverID in Partitions[partitionID].AssociatedServers)
-                    {
-                        void action() { 
-                            try
-                            {
-                                Void reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest);
-                            }
-                            catch (Exception)
-                            {
-                                Console.WriteLine(">>> SERVER {0} FAILED", serverID);
-                                NodesCommunicator.DeactivateServer(serverID);
-                                Partitions[partitionID].AssociatedServers.Remove(serverID);
-                            }
+                        catch (Exception)
+                        {
+                            // another participant is down, just keep going
                         }
-
-                        Task task = new Task(action);
-                        writeTasks.Add(task);
-                        task.Start();
-                    }
-                    Task.WaitAll(writeTasks.ToArray());
+                    } while (attempts < Partitions[partitionID].AssociatedServers.Count);
                 }
+
+                if (tidReply == null)
+                {
+                    Console.WriteLine(">>> FAILED : No sequencer was possible to reach!");
+                    return (false, "N/A");
+                }
+
+
+                // Sends Lock to Every Server
+                LockObjectRequest lockRequest = new LockObjectRequest
+                {
+                    PartitionID = partitionID,
+                    ObjectID = objectID
+                };
+                List<Task> requestTasks = new List<Task>();
+                foreach (string serverID in Partitions[partitionID].AssociatedServers)
+                {
+                    void p()
+                    {
+                        try
+                        {
+                            Void reply = NodesCommunicator.GetServerClient(serverID).LockObject(lockRequest);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine(">>> SERVER {0} FAILED", serverID);
+                            NodesCommunicator.DeactivateServer(serverID);
+                            Partitions[partitionID].AssociatedServers.Remove(serverID);
+                        }
+                    }
+
+                    Action action = p;
+                    Task task = new Task(action);
+                    requestTasks.Add(task);
+                    task.Start();
+                }
+                Task.WaitAll(requestTasks.ToArray());
+
+
+                // Sends Write to Every Server
+                WriteObjectRequest writeRequest = new WriteObjectRequest
+                {
+                    PartitionID = partitionID,
+                    ObjectID = objectID,
+                    Value = value,
+                    TID = tidReply.TID
+                };
+
+                List<Task> writeTasks = new List<Task>();
+                foreach (string serverID in Partitions[partitionID].AssociatedServers)
+                {
+                    void action() { 
+                        try
+                        {
+                            Void reply = NodesCommunicator.GetServerClient(serverID).WriteObject(writeRequest);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine(">>> SERVER {0} FAILED", serverID);
+                            NodesCommunicator.DeactivateServer(serverID);
+                            Partitions[partitionID].AssociatedServers.Remove(serverID);
+                        }
+                    }
+
+                    Task task = new Task(action);
+                    writeTasks.Add(task);
+                    task.Start();
+                }
+                Task.WaitAll(writeTasks.ToArray());
+
+                PartitionsLockers[partitionID] = false;
 
                 // Write CONFIRMED
                 return (true, "-1");
@@ -155,7 +191,8 @@ namespace GSTORE_Server.Storage
             if (!Partitions.TryAdd(pid, partition))
                 Partitions[pid] = partition;
 
-            Sequentiators.AddOrUpdate(pid, new Sequentiator(), (k,v) => v = new Sequentiator());
+            PartitionsLockers.AddOrUpdate(pid, false, (k, v) => v = false);
+            Sequencers.AddOrUpdate(pid, new Sequencer(), (k,v) => v = new Sequencer());
         }
 
 
@@ -176,11 +213,11 @@ namespace GSTORE_Server.Storage
             CheckFreezeLock();
             SimulateCommunicationDelay();
 
-            if (tid < Sequentiators[partitionID].GetCurrentTID(objectID))
+            if (tid < Sequencers[partitionID].GetCurrentTID(objectID))
                 return; 
 
             Partitions[partitionID].AddItem(objectID, value, tid);
-            Sequentiators[partitionID].UpdateTID(objectID, tid);
+            Sequencers[partitionID].UpdateTID(objectID, tid);
         }
 
 
@@ -233,10 +270,10 @@ namespace GSTORE_Server.Storage
                 foreach (KeyValuePair<string, Item> kvp in part.Value.Items)
                     Console.WriteLine("ObjectID = {0}, Value = {1}, TID = {2}", kvp.Key, kvp.Value.GetValue(), kvp.Value.GetTID());
             }
-            foreach (string s in Sequentiators.Keys)
+            foreach (string s in Sequencers.Keys)
             {
-                Console.WriteLine("/////////////  SEQUENTIATOR " + s + "///////////////");
-                Console.WriteLine(Sequentiators[s].ListSequentiator());
+                Console.WriteLine("/////////////  SEQUENCER " + s + "///////////////");
+                Console.WriteLine(Sequencers[s].ListSequencer());
             }
         }
 
@@ -250,10 +287,70 @@ namespace GSTORE_Server.Storage
 
         public int GetNewTID(string pid, string oid)
         {
-            if (Sequentiators.ContainsKey(pid))
-                return Sequentiators[pid].GetTID(oid);
+            if (Sequencers.ContainsKey(pid))
+                return Sequencers[pid].GetTID(oid);
 
             return -1;
+        }
+
+
+        public void ProcessElection(string pid, string sid)
+        {
+            // Im going to be the leader
+            if (ServerID.Equals(sid))
+            {
+                LeaderConfirmationRequest confirmation = new LeaderConfirmationRequest { Sid = sid, Pid = pid};
+                foreach (string participant in Partitions[pid].AssociatedServers)
+                {
+                    try
+                    {
+                        NodesCommunicator.GetServerClient(participant).ConfirmLeader(confirmation);
+                    } catch (Exception)
+                    {
+                        // do what? lol
+                    }
+                }
+            }
+
+
+            // Election process
+            // todo: lock partition
+            Partitions[pid].MasterServerID = null;
+            PartitionsLockers[pid] = true;
+
+            LeaderElectionRequest request = null;
+            if (String.Compare(ServerID, sid) < 0)
+            {
+                request = new LeaderElectionRequest { Pid = pid, Sid = ServerID };
+            } else
+            {
+                request = new LeaderElectionRequest { Pid = pid, Sid = sid };
+            }
+
+            int attempts = 0;
+            do
+            {
+                int pos = (Partitions[pid].AssociatedServers.IndexOf(ServerID) + 1 + attempts) % Partitions[pid].AssociatedServers.Count;
+                attempts += 1;
+
+                try
+                {
+                    NodesCommunicator.GetServerClient(Partitions[pid].AssociatedServers[pos]).ElectLeader(request);
+                    break;
+                }
+                catch (Exception)
+                {
+                    // another participant is down, just keep going
+                }
+            } while (attempts < Partitions[pid].AssociatedServers.Count);
+
+        }
+
+
+        public void ProcessLeaderConfirmation(string pid, string sid)
+        {
+            Partitions[pid].MasterServerID = sid;
+            PartitionsLockers[pid] = false;
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace GSTORE_Server.Communication
 {
-    class Sequentiator
+    class Sequencer
     {
 
         class TID
@@ -29,7 +29,7 @@ namespace GSTORE_Server.Communication
 
         private readonly ConcurrentDictionary<string, TID> Objects = new ConcurrentDictionary<string, TID>();
 
-        public Sequentiator() {}
+        public Sequencer() {}
 
         public int GetTID(string objectID)
         {            
@@ -41,7 +41,10 @@ namespace GSTORE_Server.Communication
 
         public int GetCurrentTID(string objectID)
         {
-            return Objects[objectID].GetTID();
+            if (Objects.ContainsKey(objectID))
+                return Objects[objectID].GetTID();
+            else
+                return Objects.AddOrUpdate(objectID, new TID(0), (k,v)=> v = new TID(0)).GetTID();
         }
 
         public void UpdateTID(string objectID, int tid)
@@ -49,7 +52,7 @@ namespace GSTORE_Server.Communication
             Objects.AddOrUpdate(objectID, new TID(tid), (k, v) => new TID(tid));
         }
 
-        public string ListSequentiator()
+        public string ListSequencer()
         {
             string listing = "";
             foreach (KeyValuePair<string, TID> kvp in Objects)

@@ -47,7 +47,7 @@ namespace GSTORE_Server
         }
 
 
-        // SEQUENTIATOR
+        // SEQUENCER
         public override Task<TIDReply> GetTID(TIDRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessTID(request)); ;
@@ -68,5 +68,27 @@ namespace GSTORE_Server
 
             return new TIDReply { TID = value };
         }
+
+
+        public override Task<Void> ElectLeader(LeaderElectionRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessElection(request)); ;
+        }
+        private Void ProcessElection(LeaderElectionRequest request)
+        {
+            Server.StorageServer.ProcessElection(request.Pid, request.Sid);
+            return new Void { };
+        }
+
+        public override Task<Void> ConfirmLeader(LeaderConfirmationRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessLeaderConfirmation(request)); ;
+        }
+        private Void ProcessLeaderConfirmation(LeaderConfirmationRequest request)
+        {
+            Server.StorageServer.ProcessLeaderConfirmation(request.Pid, request.Sid);
+            return new Void { };
+        }
+
     }
 }

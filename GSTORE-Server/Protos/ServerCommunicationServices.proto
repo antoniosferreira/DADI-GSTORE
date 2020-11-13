@@ -8,6 +8,8 @@ service ServerCommunicationServices {
 	rpc LockObject (LockObjectRequest) returns (Void);
 	rpc WriteObject (WriteObjectRequest) returns (Void);
 	rpc GetTID (TIDRequest) returns (TIDReply);
+	rpc ElectLeader(LeaderElectionRequest) returns (Void);
+	rpc ConfirmLeader(LeaderConfirmationRequest) returns (Void);
 }
 
 message LockObjectRequest {
@@ -32,3 +34,13 @@ message TIDRequest {
 message TIDReply {
 	int32 TID = 1;
 } 
+
+message LeaderElectionRequest {
+	string sid = 1;
+	string pid = 2;
+}
+
+message LeaderConfirmationRequest {
+	string sid = 1;
+	string pid = 2;
+}
