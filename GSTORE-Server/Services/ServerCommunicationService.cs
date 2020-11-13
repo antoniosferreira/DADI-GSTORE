@@ -60,7 +60,7 @@ namespace GSTORE_Server
                 value = Server.StorageServer.GetNewTID(request.PartitionID, request.ObjectID);
                 Console.WriteLine(">>> Processed GetNewTid({0},{1}) with {2}", request.PartitionID, request.ObjectID, value);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Console.WriteLine(">>>>>>> FAILED to ProcessTID(" + request.PartitionID + request.ObjectID + ")");
                 Console.WriteLine(e.StackTrace);
