@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Grpc.Core;
 using GSTORE_Server.Storage;
 
+
 namespace GSTORE_Server
 {
     class StorageServerService : StorageServerServices.StorageServerServicesBase
@@ -34,14 +35,12 @@ namespace GSTORE_Server
                 Console.WriteLine(e.StackTrace);
             }
 
-
             return new ReadReply
             {
                 Value = value,
                 Success = success
             };
         }
-
 
 
         // Client's Access to Write Objects
@@ -56,7 +55,7 @@ namespace GSTORE_Server
 
             try
             {
-                (success, sid) = Server.StorageServer.Write(request.PartitionID, request.ObjectID, request.Value);
+                (success, sid) = Server.StorageServer.Write(new WriteData(request));
                 Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value + "| SUCCES:" + success);
             }
             catch (Exception e)

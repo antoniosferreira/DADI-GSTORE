@@ -66,8 +66,6 @@ namespace GSTORE_Client.Commands
 
                 if (writeSuccess) return;
 
-                
-
             } while (!writeSuccess);
 
             Console.WriteLine(">>> Failed to write {0} on {1} {2}", value, partitionID, objectID);

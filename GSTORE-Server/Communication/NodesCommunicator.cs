@@ -43,5 +43,10 @@ namespace GSTORE_Server.Communication
         {
             return (List<ServerCommunicationServices.ServerCommunicationServicesClient>)Servers.Where(x => x.Value.Item1).Select(x => x.Value.Item2);
         }
+
+        public List<Tuple<string, ServerCommunicationServices.ServerCommunicationServicesClient>> GetServers()
+        {
+            return Servers.Select(selector: x => new Tuple<string, ServerCommunicationServices.ServerCommunicationServicesClient>(x.Key, x.Value.Item2)).ToList();
+        }
     }
 }

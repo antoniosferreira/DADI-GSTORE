@@ -1,0 +1,4 @@
+SERVER s1 http://localhost:2001
+SERVER s2 http://localhost:2002
+SERVER s3 http://localhost:2003
+SERVER c1 http://localhost:2004

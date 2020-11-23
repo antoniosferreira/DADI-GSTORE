@@ -50,5 +50,7 @@ namespace GSTORE_Server
             Console.ReadKey();
             server.ShutdownAsync().Wait();
         }
+
+
     }
 }

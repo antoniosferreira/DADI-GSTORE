@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Grpc.Core;
 using System;
+using GSTORE_Server.Storage;
 
 namespace GSTORE_Server
 {
@@ -10,63 +11,6 @@ namespace GSTORE_Server
         
         public ServerCommunicationService(in Server server) {
             Server = server;
-        }
-
-        // Request to lock some object
-        public override Task<Void> LockObject(LockObjectRequest request, ServerCallContext context)
-        {
-            try
-            {
-                Server.StorageServer.LockObject(request.PartitionID, request.ObjectID);
-                Console.WriteLine(">>> LockObject(" + request.PartitionID + " , " + request.ObjectID + ")");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(">>> FAILED to LockObject(" + request.PartitionID + " , " + request.ObjectID + ")");
-                Console.WriteLine(e.StackTrace);
-            }
-
-            return Task.FromResult(new Void { });
-        }
-
-
-        // Request to update some object and unlock it afterwards
-        public override Task<Void> WriteObject(WriteObjectRequest request, ServerCallContext context)
-        {
-            try
-            {
-                Server.StorageServer.WriteObject(request.PartitionID, request.ObjectID, request.Value, request.TID);
-                Console.WriteLine(">>> WriteObject(" + request.PartitionID + " , " + request.ObjectID + " , " + request.Value + ")");
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(">>> FAILED to WriteObject(" + request.PartitionID + " , " + request.ObjectID + " , " + request.Value + ")");
-            }
-
-            return Task.FromResult(new Void { });
-        }
-
-
-        // SEQUENCER
-        public override Task<TIDReply> GetTID(TIDRequest request, ServerCallContext context)
-        {
-            return Task.FromResult(ProcessTID(request)); ;
-        }
-        private TIDReply ProcessTID(TIDRequest request)
-        {
-            int value = -1;
-            try
-            {
-                value = Server.StorageServer.GetNewTID(request.PartitionID, request.ObjectID);
-                Console.WriteLine(">>> Processed GetNewTid({0},{1}) with {2}", request.PartitionID, request.ObjectID, value);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine(">>>>>>> FAILED to ProcessTID(" + request.PartitionID + request.ObjectID + ")");
-                Console.WriteLine(e.StackTrace);
-            }
-
-            return new TIDReply { TID = value };
         }
 
 
@@ -80,6 +24,8 @@ namespace GSTORE_Server
             return new Void { };
         }
 
+
+
         public override Task<Void> ConfirmLeader(LeaderConfirmationRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessLeaderConfirmation(request)); ;
@@ -90,5 +36,53 @@ namespace GSTORE_Server
             return new Void { };
         }
 
+
+
+        public override Task<Void> HeartBeat(Void request, ServerCallContext context)
+        {
+            return Task.FromResult(new Void { });
+        }
+
+
+
+        public override Task<WriteResult> StartWrite(WriteRequestData request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessStartWrite(request)); ;
+        }
+        private WriteResult ProcessStartWrite(WriteRequestData request)
+        {
+            WriteData write = new WriteData(request.Tid, request.Pid, request.Oid, request.Value);
+            return new WriteResult { Success = Server.StorageServer.StartWrite(write) }; 
+        }
+
+
+
+
+        public override Task<Void> DeliverPrepareRequest(WriteRequestData request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessPrepareRequest(request)); ;
+        }
+
+        private Void ProcessPrepareRequest(WriteRequestData request)
+        {
+            WriteData write = new WriteData(request.Tid, request.Pid, request.Oid, request.Value);
+            Server.StorageServer.DeliverPrepareRequest(write);
+            return new Void {};
+        }
+
+
+
+
+        public override Task<WriteRequestData> RetrieveWrite(WriteRetrievalRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(ProcessRetrieveWrite(request)); ;
+        }
+
+        private WriteRequestData ProcessRetrieveWrite(WriteRetrievalRequest request)
+        {
+            WriteData data = Server.StorageServer.RetrieveWrite(request.Tid, request.Pid);
+            WriteRequestData write = new WriteRequestData { Oid =data.Oid, Pid =data.Pid, Tid =data.Tid, Value =data.Value};
+            return write;
+        }
     }
 }

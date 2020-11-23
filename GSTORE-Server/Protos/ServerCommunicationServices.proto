@@ -5,35 +5,16 @@ option csharp_namespace = "GSTORE_Server";
 package gstoreservices;
 
 service ServerCommunicationServices {
-	rpc LockObject (LockObjectRequest) returns (Void);
-	rpc WriteObject (WriteObjectRequest) returns (Void);
-	rpc GetTID (TIDRequest) returns (TIDReply);
 	rpc ElectLeader(LeaderElectionRequest) returns (Void);
 	rpc ConfirmLeader(LeaderConfirmationRequest) returns (Void);
+	rpc HeartBeat(Void) returns (Void);
+	rpc StartWrite(WriteRequestData) returns (WriteResult);
+	rpc DeliverPrepareRequest(WriteRequestData) returns (Void);
+	rpc RetrieveWrite(WriteRetrievalRequest) returns (WriteRequestData);
 }
 
-message LockObjectRequest {
-	string partitionID = 1;
-	string objectID = 2;
-} 
-
-message WriteObjectRequest {
-	string partitionID = 1;
-	string objectID = 2;
-	string value = 3;
-	int32 TID = 4;
-}
 
 message Void {}
-
-message TIDRequest {
-	string partitionID = 1;
-	string objectID = 2;
-} 
-
-message TIDReply {
-	int32 TID = 1;
-} 
 
 message LeaderElectionRequest {
 	string sid = 1;
@@ -42,5 +23,21 @@ message LeaderElectionRequest {
 
 message LeaderConfirmationRequest {
 	string sid = 1;
+	string pid = 2;
+}
+
+message WriteRequestData {
+	int32 tid = 1;
+	string pid = 2;
+	string oid = 3;
+	string value = 4;
+}
+
+message WriteResult {
+	bool success = 1;
+}
+
+message WriteRetrievalRequest {
+	int32 tid = 1;
 	string pid = 2;
 }
