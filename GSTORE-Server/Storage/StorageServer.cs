@@ -73,7 +73,6 @@ namespace GSTORE_Server.Storage
             if (!Partitions.ContainsKey(request.Pid))
                 return false;
 
-
             // Creates the Write Request
             WriteRequestData writeRequest = new WriteRequestData
             {
@@ -83,6 +82,7 @@ namespace GSTORE_Server.Storage
                 Value = request.Value
             };
 
+
             // Forwards request to partition leader
             int attempts = 0;
             WriteResult reply = null;
@@ -91,6 +91,7 @@ namespace GSTORE_Server.Storage
                 try
                 {
                     string partitionLeader = Partitions[request.Pid].CurrentView.ViewLeader;
+
                     if (partitionLeader != null)
                     {
                         attempts += 1;
@@ -182,7 +183,13 @@ namespace GSTORE_Server.Storage
 
                 Console.WriteLine("===== Sequencer ======");
                 Console.WriteLine("Sequencer = {0}", part.Value.Sequencer);
-                
+
+                Console.WriteLine("===== View ======");
+                Console.WriteLine("View = {0}", part.Value.CurrentView.ViewID);
+                Console.WriteLine("Leader = {0}", part.Value.CurrentView.ViewLeader);
+                foreach (string p in part.Value.CurrentView.ViewParticipants)
+                    Console.Write("-{0}-", p);
+
             }
         }
 
@@ -216,12 +223,10 @@ namespace GSTORE_Server.Storage
                 // LOCAL WRITE
                 Partitions[write.Pid].AddItem(new WriteData(request));
             }
+            
 
-
-            // VIEW WRITE ON EVERY SERVER
             List<Task> requestTasks = new List<Task>();
 
-            bool success = false;
             List<string> failedServers = new List<string>();
             
             List<string> participants = new List<string>(partition.CurrentView.ViewParticipants);
@@ -240,7 +245,6 @@ namespace GSTORE_Server.Storage
                         };
 
                         Void reply = NodesCommunicator.GetServerClient(server).ViewDeliver(deliverRequest);
-                        success = true;
                     }
                     catch (Exception)
                     {
@@ -259,11 +263,12 @@ namespace GSTORE_Server.Storage
             Task.WaitAll(requestTasks.ToArray());
 
 
+
             // Updates View if some server failed
             if (failedServers.Count > 0)
                 StartNewView(partition, failedServers);
 
-            return success;
+            return true;
         }
 
         public WriteData RetrieveWrite(string pid, int tid, int viewId)

@@ -1,6 +1,4 @@
-﻿SERVER s1 http://localhost:2001
-SERVER s2 http://localhost:2002
-SERVER s3 http://localhost:2003
-SERVER s4 http://localhost:2006
-CLIENT c1 http://localhost:2004
-CLIENT c2 http://localhost:2005
+SERVER s1 http://localhost:3000
+SERVER s2 http://localhost:4000
+SERVER s3 http://localhost:5000
+CLIENT mary http://localhost:6000

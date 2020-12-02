@@ -51,7 +51,7 @@ namespace GSTORE_Client.Commands
             };
 
             int attempts = -1;
-            bool writeSuccess;
+            bool writeSuccess = false;
             do
             {
                 if (attempts == (serversToContact.Count - 1))
@@ -62,9 +62,14 @@ namespace GSTORE_Client.Commands
                 Client.CurrentServer = serversToContact[attempts];
 
                 // Sends the Write to the Current Attached Server
-                writeSuccess = SendWriteRequest(writeRequest, Client.NodesCommunicator.GetServerClient(Client.CurrentServer));
-
-                if (writeSuccess) return;
+                try
+                {
+                    writeSuccess = SendWriteRequest(writeRequest, Client.NodesCommunicator.GetServerClient(Client.CurrentServer));
+                    if (writeSuccess) return;
+                } catch (Exception)
+                {
+                    // server failed
+                }
 
             } while (!writeSuccess);
 

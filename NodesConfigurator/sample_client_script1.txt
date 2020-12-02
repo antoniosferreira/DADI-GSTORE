@@ -1,4 +1,3 @@
-wait 200
 write part2 o1 "the object's value"
 read p1 MyObject -1
 read part2 o1 s3
