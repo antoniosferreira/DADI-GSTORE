@@ -12,16 +12,8 @@ namespace PCS
     {
         const int Port = 10000;
 
-        static void Main(string[] args)
+        static void Main()
         {
-            if (args.Length != 1)
-            {
-                Console.WriteLine("Failed to initiate the PCS module");
-                Console.WriteLine("Usage: <nodesFile>");
-
-                Environment.Exit(1);
-            }
-
             Server server = new Server
             {
                 Services = { PCSServices.BindService(new PCSService()) },

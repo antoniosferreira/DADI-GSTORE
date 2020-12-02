@@ -40,8 +40,8 @@ namespace GSTORE_Server
             Grpc.Core.Server server = new Grpc.Core.Server
             {
                 Services = { StorageServerServices.BindService(new StorageServerService(this)),
-                            PMServices.BindService(new PMService(this)),
-                            ServerCommunicationServices.BindService(new ServerCommunicationService(this))},
+                            PMServices.BindService(new PMService(this.StorageServer)),
+                            ServerCommunicationServices.BindService(new ServerCommunicationService(this.StorageServer))},
                 Ports = { new ServerPort(ServerURL, ServerPort, ServerCredentials.Insecure) }
             };
             server.Start();

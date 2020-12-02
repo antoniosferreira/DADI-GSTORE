@@ -3,18 +3,20 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Grpc.Core;
 
+using GSTORE_Server.Storage;
+
 namespace GSTORE_Server
 {
     class PMService : PMServices.PMServicesBase
     {
-        private readonly Server Server;
+        private readonly StorageServer Storage;
 
-        public PMService(in Server server) {
-            Server = server;
+        public PMService(in StorageServer storage) {
+            Storage = storage;
         }
 
 
-        // Creates a new Partition
+        // NEW LOCAL PARTITION
         public override Task<Empty> Partition(PartitionRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessPartition(request)); ;
@@ -24,13 +26,14 @@ namespace GSTORE_Server
             try
             {
                 List<string> servers = new List<string>(request.Servers);
-                Server.StorageServer.NewPartition(request.PartitionID, servers);
-                Console.WriteLine(">>> ProcessPartition(" + request.PartitionID + ")");
+                Storage.NewPartition(request.PartitionID, servers);
+                ConsoleWrite(">>> New Partition " + request.PartitionID, ConsoleColor.DarkGreen);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(">>> FAILED to ProcessPartition(" + request.PartitionID + ")");
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite(">>> Failed to process new partition " + request.PartitionID, ConsoleColor.DarkRed);
+                Console.ReadKey();
+                Environment.Exit(-1);
             }
 
             return new Empty { };
@@ -55,12 +58,11 @@ namespace GSTORE_Server
         {
             try
             {
-                Server.StorageServer.PrintStatus();
+                Storage.PrintStatus();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(">>> Failed to Print Status");
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite(">>> Failed to print Status", ConsoleColor.DarkRed);
             }
 
             return new Empty { };
@@ -77,13 +79,12 @@ namespace GSTORE_Server
         {
             try
             {
-                Server.StorageServer.Freeze();
-                Console.WriteLine(">>> Process is now FREEZED!");
+                ConsoleWrite(">>> Process is now being FREEZED", ConsoleColor.DarkCyan);
+                Storage.Freeze();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(">>> Failed to FREEZE the process");
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite(">>> Failed to FREEZE the process", ConsoleColor.DarkRed);
             }
 
 
@@ -101,17 +102,24 @@ namespace GSTORE_Server
         {
             try
             {
-                Server.StorageServer.Unfreeze();
-                Console.WriteLine(">>> Process is now UNFREEZED!");
+                Storage.Unfreeze();
+                ConsoleWrite(">>> Process is now UNFREEZED!", ConsoleColor.DarkCyan);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(">>> Failed to UNFREEZE the process");
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite(">>> Failed to UNFREEZE the process", ConsoleColor.DarkRed);
             }
 
 
             return new Empty { };
+        }
+
+
+        private void ConsoleWrite(string message, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(message);
+            Console.ForegroundColor = ConsoleColor.Gray;
         }
     }
 }

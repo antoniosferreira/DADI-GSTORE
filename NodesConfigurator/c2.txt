@@ -1,13 +1,4 @@
-﻿wait 2000
-begin-repeat 3
-read p0$i 0$i -1
-end-repeat
-begin-repeat 3
-read p0$i 0$i -1
-end-repeat
-begin-repeat 3
-read p0$i 0$i -1
-end-repeat
-begin-repeat 3
-read p0$i 0$i -1
+﻿begin-repeat 10
+write p1 o$i "adeus"
+wait 100
 end-repeat

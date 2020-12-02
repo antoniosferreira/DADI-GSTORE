@@ -51,11 +51,9 @@ namespace GSTORE_Server
         private WriteReply ProcessWriteRequest(WriteRequest request)
         {
             bool success = false;
-            string sid = "-1";
-
             try
             {
-                (success, sid) = Server.StorageServer.Write(new WriteData(request));
+                success = Server.StorageServer.Write(new WriteData(request));
                 Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value + "| SUCCES:" + success);
             }
             catch (Exception e)
@@ -67,7 +65,6 @@ namespace GSTORE_Server
             return new WriteReply
             {
                 Success = success,
-                ServerID = sid
             };
         }
 

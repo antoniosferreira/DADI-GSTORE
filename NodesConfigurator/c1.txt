@@ -1,1 +1,4 @@
-﻿
+﻿begin-repeat 10
+wait 200
+write p1 o$i "ola"
+end-repeat

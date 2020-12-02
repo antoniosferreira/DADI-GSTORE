@@ -10,13 +10,7 @@ namespace PM
     {
         static void Main(string[] args)
         {
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Failed to initiate the Puppet Master");
-                Console.WriteLine("Usage: <nodesFile> <pmScript>?");
-
-                Environment.Exit(1);
-            }
+           
 
 
             PM puppet = new PM();
@@ -25,10 +19,10 @@ namespace PM
 
 
             // Executes PM Script if existent
-            if (args.Length == 2)
+            if (args.Length == 1)
             {
                 string scriptPath = Directory.GetParent(System.IO.Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName + "\\NodesConfigurator\\";
-                var pmScript = scriptPath + args[1] + ".txt";
+                var pmScript = scriptPath + args[0] + ".txt";
 
                     string[] commands = System.IO.File.ReadAllLines(pmScript);
                     foreach (string command in commands)

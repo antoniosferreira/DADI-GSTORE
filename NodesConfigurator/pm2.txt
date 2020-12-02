@@ -1,6 +1,13 @@
-ReplicationFactor 3
-Partition 3 p1 s2 s1 s3
+ReplicationFactor 4
+Partition 4 p1 s2 s1 s3 s4
+Server s4 http://localhost:2006 0 0
 Server s1 http://localhost:2001 0 0
 Server s2 http://localhost:2002 0 0
 Server s3 http://localhost:2003 0 0
+wait 2500
 client c1 http://localhost:2004 c1
+client c2 http://localhost:2005 c2
+wait 4550
+crash s2
+wait 4000
+status

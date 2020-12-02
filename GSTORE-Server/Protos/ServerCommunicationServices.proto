@@ -5,23 +5,22 @@ option csharp_namespace = "GSTORE_Server";
 package gstoreservices;
 
 service ServerCommunicationServices {
-	rpc ElectLeader(LeaderElectionRequest) returns (Void);
-	rpc ConfirmLeader(LeaderConfirmationRequest) returns (Void);
-	rpc HeartBeat(Void) returns (Void);
-	rpc StartWrite(WriteRequestData) returns (WriteResult);
-	rpc DeliverPrepareRequest(WriteRequestData) returns (Void);
+	rpc LaunchWrite(WriteRequestData) returns (WriteResult);
+	rpc ViewDeliver(ViewDeliverRequest) returns (Void);
+	rpc ViewChange(ViewChangeRequest) returns (Void);	
 	rpc RetrieveWrite(WriteRetrievalRequest) returns (WriteRequestData);
+
+	rpc ElectLeader(LeaderElectionRequest) returns (Void);
+	rpc ConfirmLeader(ViewChangeRequest) returns (Void);
+
+	rpc HeartBeat(Void) returns (Void);
+
 }
 
 
 message Void {}
 
 message LeaderElectionRequest {
-	string sid = 1;
-	string pid = 2;
-}
-
-message LeaderConfirmationRequest {
 	string sid = 1;
 	string pid = 2;
 }
@@ -40,4 +39,25 @@ message WriteResult {
 message WriteRetrievalRequest {
 	int32 tid = 1;
 	string pid = 2;
+	int32 viewId = 3;
 }
+
+message ViewDeliverRequest {
+	int32 viewId = 1;
+	string viewLeader = 2;
+	WriteRequestData message = 3;
+}
+
+message ViewSequencers {
+	string sid = 1;
+	int32 sequencer = 2;
+} 
+
+message ViewChangeRequest {
+	int32 viewId = 1;
+	string pid = 2;
+	string viewLeader = 3;
+	repeated string viewParticipants = 4;
+	repeated ViewSequencers viewSequencers = 5;
+}
+
