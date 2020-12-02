@@ -7,43 +7,43 @@ using GSTORE_Server.Communication;
 namespace GSTORE_Server.Storage
 {
     class Partition
-    {         
-        public readonly ConcurrentDictionary<string, (int, string)> Items = new ConcurrentDictionary<string, (int, string)>();
-        public readonly ConcurrentDictionary<string, int> ReplicasSequencers = new ConcurrentDictionary<string, int>();
-
+    {
         public string PartitionID { get; }
-
         public View PreviousView { get; set; } = null;
         public View CurrentView { get; set; }
+
+
+        public readonly ConcurrentDictionary<string, (int, string)> Items = new ConcurrentDictionary<string, (int, string)>();
+        public int Sequencer = 0;
+
 
         public Partition(string pid, List<String> servers)
         {
             PartitionID = pid;
+            Sequencer = 0;
             CurrentView = new View(0, servers[0], servers);
-
-            foreach (string server in CurrentView.ViewParticipants) 
-                ReplicasSequencers.AddOrUpdate(server, 0, (k,v)=>v=0);
-            
         }
 
         public void AddItem(WriteData write)
         {
             CurrentView.Buffer.AddOrUpdate(write.Tid, write, (k, v) => v = write);
             
+            // New object written
             if (!Items.ContainsKey(write.Oid))
             {
                 Items.AddOrUpdate(write.Oid, (write.Tid, write.Value), (k, v) => v = (write.Tid, write.Value));
-                if (write.Tid > ReplicasSequencers[CurrentView.ViewLeader])
-                    ReplicasSequencers[CurrentView.ViewLeader] = write.Tid;
+                if (write.Tid > Sequencer)
+                    Sequencer = write.Tid;
 
                 return;
             }
 
+            // Update on a given object
             if (write.Tid > Items[write.Oid].Item1)
             {
                 Items.AddOrUpdate(write.Oid, (write.Tid, write.Value), (k, v) => v = (write.Tid, write.Value));
-                if (write.Tid > ReplicasSequencers[CurrentView.ViewLeader])
-                    ReplicasSequencers[CurrentView.ViewLeader] = write.Tid;
+                if (write.Tid > Sequencer)
+                    Sequencer = write.Tid;
             }
         }
 

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option csharp_namespace = "PM";
+
+package gstoreservices;
+
+service StatusService {
+	rpc Status (Stat) returns (Stat);
+}
+
+message Stat {} 

@@ -4,8 +4,8 @@ option csharp_namespace = "GSTORE_Client";
 
 package gstoreservices;
 
-service ServerServices {
-	rpc Status (Empty) returns (Empty);
+service StatusService {
+	rpc Status (Stat) returns (Stat);
 }
 
-message Empty {} 
+message Stat {} 

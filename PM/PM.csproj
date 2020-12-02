@@ -8,6 +8,7 @@
   <ItemGroup>
     <None Remove="Protos\PCSServices.proto" />
     <None Remove="Protos\PMServices.proto" />
+    <None Remove="Protos\StatusService.proto" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="Protos\StatusService.proto" GrpcServices="Client" />
     <Protobuf Include="Protos\PCSServices.proto" GrpcServices="Client" />
     <Protobuf Include="Protos\PMServices.proto" GrpcServices="Client" />
   </ItemGroup>

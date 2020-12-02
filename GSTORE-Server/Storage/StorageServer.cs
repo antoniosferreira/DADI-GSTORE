@@ -1,13 +1,17 @@
 ﻿using System;
+
 using System.Threading;
+using System.Threading.Tasks;
+
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
+
 using GSTORE_Server.Communication;
-using System.Linq;
 
 namespace GSTORE_Server.Storage
 {
+
+
     public class StorageServer
     {
         public string ServerID { get; }
@@ -16,20 +20,38 @@ namespace GSTORE_Server.Storage
 
 
         private readonly ConcurrentDictionary<string, Partition> Partitions = new ConcurrentDictionary<string, Partition>();
-        private readonly ConcurrentDictionary<string, Object> PartitionLockers = new ConcurrentDictionary<string, Object>();
+        private readonly ConcurrentDictionary<string, object> PartitionLockers = new ConcurrentDictionary<string, object>();
         private readonly ConcurrentDictionary<string, bool> Elections = new ConcurrentDictionary<string, bool>();
 
         readonly object FreezeLock = new object();
         private bool Frozen = false;
 
-
         public StorageServer(string serverID, int delay) {
             ServerID = serverID;
             Delay = delay;
+
+
+            // Thread for checking alive servers
+            void p() {
+                do
+                {
+                    Thread.Sleep(10000);
+                    CheckLeaderHeartbeat();
+                } while (true);
+            };
+            Action action = p;
+            Task task = new Task(p);
+            task.Start();
         }
 
 
-        // READ OPERATION TO CLIENT
+        /* 
+         * CLIENT EXPOSED OPERATIONS
+         * Read, Write and List
+        */
+
+
+        // Returns immediate value if it is on storage
         public (bool, string) Read(string partitionID, string objectID)
         {
             CheckFreezeLock();
@@ -42,7 +64,7 @@ namespace GSTORE_Server.Storage
             return (true, Partitions[partitionID].GetValue(objectID));
         }
 
-        // WRITE OPERATION TO CLIENT
+        // Contacts replica leader to start writing
         public bool Write(WriteData request)
         {
             CheckFreezeLock();
@@ -51,8 +73,8 @@ namespace GSTORE_Server.Storage
             if (!Partitions.ContainsKey(request.Pid))
                 return false;
 
-            // If replicates the partition, starts the write by forwarding the request 
-            // to partition's leader
+
+            // Creates the Write Request
             WriteRequestData writeRequest = new WriteRequestData
             {
                 Tid = -1, // to be assigned by leader partition
@@ -61,6 +83,7 @@ namespace GSTORE_Server.Storage
                 Value = request.Value
             };
 
+            // Forwards request to partition leader
             int attempts = 0;
             WriteResult reply = null;
             do
@@ -78,38 +101,15 @@ namespace GSTORE_Server.Storage
                 }
                 catch (Exception)
                 {
-                    // Leader is down, start elections
-                    Elections[request.Pid] = true;
-                    int electionAttempts = 0;
-
-                    List<string> viewServers = Partitions[request.Pid].CurrentView.ViewParticipants;
-                    viewServers.Remove(Partitions[request.Pid].CurrentView.ViewLeader);
-                    do
-                    {
-                        int pos = (viewServers.IndexOf(ServerID) + 1 + electionAttempts) % viewServers.Count;
-                        electionAttempts += 1;
-
-                        try
-                        {
-                            string sid = viewServers[pos];
-
-                            LeaderElectionRequest electionRequest = new LeaderElectionRequest { Pid = request.Pid, Sid = sid };
-                            NodesCommunicator.GetServerClient(sid).ElectLeader(electionRequest);
-                            break;
-                        }
-                        catch (Exception)
-                        {
-                            // another participant is down, just keep going
-                        }
-                    } while (attempts < viewServers.Count);
+                    // Leader is down
+                    StartElections(request.Pid);
                 }
             } while (reply == null || attempts < 20);
-
 
             return false;
         }
 
-        // LIST OPERATION TO CLIENT
+        // Lists every partition it replicates
         public List<string> ListServerPartitions()
         {
             CheckFreezeLock();
@@ -121,24 +121,24 @@ namespace GSTORE_Server.Storage
             {
                 string partitionListing = "=== Partition " + part.Key + " with master server " + part.Value.CurrentView.ViewLeader + " ===\n";
                 foreach (KeyValuePair<string, (int, string)> kvp in part.Value.Items)
-                    partitionListing += "ObjectID = " + kvp.Key + " Value = " + kvp.Value.Item2 + "-" + kvp.Value.Item1 + "\n";
+                    partitionListing += "ObjectID = " + kvp.Key + " Value = " + kvp.Value.Item2 + "-TID-" + kvp.Value.Item1 + "\n";
                 listing.Add(partitionListing);
             }
 
             return listing;
         }
 
-        //
-        // System Configuration
-        //
-        //  NewPartition, Freezes, Status
-        //
+        /* 
+         * PM EXPOSED OPERATIONS
+         * NewPartition, Freeze, Status
+        */
 
         public void NewPartition(string pid, List<string> servers)
         {
             CheckFreezeLock();
 
             Partition partition = new Partition(pid, servers);
+
             Partitions.AddOrUpdate(pid, partition, (k, v) => v = partition);
             PartitionLockers.AddOrUpdate(pid, new Object(), (k, v) => new object());
             Elections.AddOrUpdate(pid, false, (k, v) => false);
@@ -178,141 +178,18 @@ namespace GSTORE_Server.Storage
             {
                 Console.WriteLine("===== Partition " + part.Key + " With Master Server " + part.Value.CurrentView.ViewLeader + " ======");
                 foreach (KeyValuePair<string, (int,string)> kvp in part.Value.Items)
-                    Console.WriteLine("ObjectID = {0}, Value = {1}", kvp.Key, kvp.Value.Item2);
+                    Console.WriteLine("ObjectID = {0}, Value = {1}, TID = {2}", kvp.Key, kvp.Value.Item2, kvp.Value.Item1);
 
-                Console.WriteLine("===== Sequencers ======");
-                foreach (KeyValuePair<string, int> seq in part.Value.ReplicasSequencers)
-                {
-                    Console.WriteLine("Server = {0}  |  Tid = {1}", seq.Key, seq.Value);
-                }
-            }
-        }
-
-
-        //
-        // Communication Configuration
-        //
-        //  Elections, heartbeats
-        //
-        public void ProcessElection(string pid, string sid)
-        {
-            // Im going to be the leader
-            if (ServerID.Equals(sid))
-            {
-
-                // update new view locally
-                List<string> participants = Partitions[pid].CurrentView.ViewParticipants;
-                Partitions[pid].PreviousView = Partitions[pid].CurrentView;
-                Partitions[pid].CurrentView = new View(Partitions[pid].PreviousView.ViewID+1, ServerID, participants);
-                Partitions[pid].ReplicasSequencers[ServerID] = Partitions[pid].ReplicasSequencers[Partitions[pid].PreviousView.ViewLeader];
+                Console.WriteLine("===== Sequencer ======");
+                Console.WriteLine("Sequencer = {0}", part.Value.Sequencer);
                 
-                // updates new view remotely
-                ViewChangeRequest confirmation = new ViewChangeRequest { 
-                    Pid = pid,
-                    ViewId = Partitions[pid].CurrentView.ViewID,
-                    ViewLeader = sid
-                };
-
-                confirmation.ViewParticipants.Add(participants);
-                List<ViewSequencers> sequencers = new List<ViewSequencers>();
-                foreach (KeyValuePair<string, int> kvp in Partitions[pid].ReplicasSequencers)
-                {
-                    ViewSequencers seq = new ViewSequencers
-                    {
-                        Sid = kvp.Key,
-                        Sequencer = kvp.Value
-                    };
-                    sequencers.Add(seq);
-                }
-                confirmation.ViewSequencers.Add(sequencers);
-
-                foreach (string participant in Partitions[pid].CurrentView.ViewParticipants)
-                {
-                    try
-                    {
-                        NodesCommunicator.GetServerClient(participant).ConfirmLeader(confirmation);
-                    } catch (Exception)
-                    {
-                        // do what? lol
-                    }
-                }
-
-                return;
-            }
-
-
-            // PARTICIPATING ON ELECTIONS
-
-            LeaderElectionRequest request;
-            if (String.Compare(ServerID, sid) < 0)
-            {
-                request = new LeaderElectionRequest { Pid = pid, Sid = ServerID };
-            } else
-            {
-                request = new LeaderElectionRequest { Pid = pid, Sid = sid };
-            }
-
-            int attempts = 0;
-            do
-            {
-                int pos = (Partitions[pid].CurrentView.ViewParticipants.IndexOf(ServerID) + 1 + attempts) % Partitions[pid].CurrentView.ViewParticipants.Count;
-                attempts += 1;
-
-                try
-                {
-                    NodesCommunicator.GetServerClient(Partitions[pid].CurrentView
-                        .ViewParticipants[pos]).ElectLeader(request);
-                    break;
-                }
-                catch (Exception)
-                {
-                    // another participant is down, just keep going
-                }
-            } while (attempts < Partitions[pid].CurrentView.ViewParticipants.Count);
-
-        }
-
-        public void CheckAliveServers() {
-
-            // Contacts Every Server on Nodes
-            // Sends heartbeat
-            // checks every partition for that server, removes it
-            foreach (Tuple<String, ServerCommunicationServices.ServerCommunicationServicesClient> tuple in NodesCommunicator.GetServers())
-            {
-                void action()
-                {
-                    try
-                    {
-                        tuple.Item2.HeartBeat(new Void { });
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine(">>> Server " + tuple.Item1 + " failed to respond to heartbeat");
-
-                        // Removes server from each partition
-                        foreach (Partition p in Partitions.Values)
-                        {
-                            if (p.CurrentView.ViewParticipants.Contains(tuple.Item1))
-                            {
-                                p.CurrentView.ViewParticipants.Remove(tuple.Item1);
-                            }
-                        }
-                    }
-                }
-
-                Task task = new Task(action);
-                task.Start();
             }
         }
 
-
-
-
-        //
-        // FUNCTIONALITY
-        //  
-        //  launchwrite, retrieves and deliveries
-        //
+        /* 
+        * SYSTEM FUNCTIONALITY
+        * LAUNCHWRITE, RETRIEVEWRITE
+        */
         public bool LaunchWrite(WriteData write)
         {
 
@@ -323,12 +200,10 @@ namespace GSTORE_Server.Storage
 
             // Creates Write Request To Other Replicas
             int tid = -1;
-
             WriteRequestData request;
-
             lock (PartitionLockers[write.Pid])
             {
-                tid = partition.ReplicasSequencers[ServerID] += 1;
+                tid = partition.Sequencer += 1;
 
                 request = new WriteRequestData
                 {
@@ -338,17 +213,17 @@ namespace GSTORE_Server.Storage
                     Value = write.Value
                 };
 
-                // write locally 
+                // LOCAL WRITE
                 Partitions[write.Pid].AddItem(new WriteData(request));
             }
 
 
-            // Sends write to all replicas,
-            // using a view communication call
+            // VIEW WRITE ON EVERY SERVER
+            List<Task> requestTasks = new List<Task>();
+
             bool success = false;
             List<string> failedServers = new List<string>();
-
-            List<Task> requestTasks = new List<Task>();
+            
             List<string> participants = new List<string>(partition.CurrentView.ViewParticipants);
             participants.Remove(ServerID);
             foreach (string server in participants)
@@ -381,8 +256,6 @@ namespace GSTORE_Server.Storage
                 requestTasks.Add(task);
                 task.Start();
             }
-
-
             Task.WaitAll(requestTasks.ToArray());
 
 
@@ -393,78 +266,6 @@ namespace GSTORE_Server.Storage
             return success;
         }
 
-
-        public void ProcessViewDelivery(int viewID, string viewLeader, WriteData write)
-        {
-            lock (PartitionLockers[write.Pid])
-            {
-                if (viewID == Partitions[write.Pid].CurrentView.ViewID && viewLeader.Equals(Partitions[write.Pid].CurrentView.ViewLeader))
-                    Partitions[write.Pid].AddItem(write);
-                else
-                {
-                    Console.WriteLine("View delivery rejected");
-                }
-            }
-
-        }
-
-
-        public void ProcessViewChange(string pid, int viewId, string viewLeader, List<String> viewParticipants, List<(string,int)> viewSequencers)
-        {
-            lock (PartitionLockers[pid])
-            {
-                // Retrieves old writes
-                foreach ((string,int) remoteSequencer in viewSequencers) { 
-                    if (Partitions[pid].ReplicasSequencers[remoteSequencer.Item1]<remoteSequencer.Item2)
-                    {
-                        int lastRequest = Partitions[pid].ReplicasSequencers[remoteSequencer.Item1];
-                        do
-                        {
-                            lastRequest += 1;
-                            if (lastRequest == remoteSequencer.Item2)
-                                break;
-
-                            bool success = false;
-                            foreach (string serverID in Partitions[pid].CurrentView.ViewParticipants)
-                            {
-                                try
-                                {
-                                    WriteRetrievalRequest retrieveRequest = new WriteRetrievalRequest
-                                    {
-                                        Tid = lastRequest,
-                                        Pid = pid,
-                                        ViewId = Partitions[pid].CurrentView.ViewID
-                                    };
-                                    WriteRequestData r = NodesCommunicator.GetServerClient(serverID).RetrieveWrite(retrieveRequest);
-
-                                    // Process write
-                                    Partitions[pid].AddItem(new WriteData(r));
-                                    Partitions[pid].ReplicasSequencers[Partitions[pid].CurrentView.ViewLeader] += 1;
-                                    success = true;
-
-                                    break;
-                                }
-                                catch (Exception)
-                                {
-                                    // Some other server is failing...
-                                    // Leader it will take care of it
-                                }
-                            }
-                            // Failed to retrieve write
-                            // Exits immed
-                            if (!success) Environment.Exit(0);
-                        } while (lastRequest < remoteSequencer.Item2);
-                    }
-                }
-
-                // Updates View
-                Partitions[pid].PreviousView = Partitions[pid].CurrentView;
-                Partitions[pid].CurrentView = new View(viewId, viewLeader, viewParticipants);
-            }
-
-        }
-
-
         public WriteData RetrieveWrite(string pid, int tid, int viewId)
         {
             if (Partitions[pid].CurrentView.ViewID == viewId)
@@ -472,10 +273,17 @@ namespace GSTORE_Server.Storage
             if (Partitions[pid].PreviousView.ViewID == viewId)
                 return Partitions[pid].PreviousView.Buffer[tid];
 
+            // Not expected to happen
+            ConsoleWrite("StorageServer: Failure on Retrievewrite, functionality compromised", ConsoleColor.DarkRed);
             return null;
         }
 
 
+
+        /* 
+         * VIEW COMMUNICATION
+         * STARTNEWVIEW, PROCESSVIEWCHANGE, PROCESSVIEWDELIVERY
+         */
 
         private void StartNewView(Partition partition, List<string> failedServers)
         {
@@ -485,21 +293,13 @@ namespace GSTORE_Server.Storage
                 // Updates LOCALLY
                 partition.PreviousView = partition.CurrentView;
                 partition.CurrentView = new View(partition.CurrentView, failedServers);
+                Elections[partition.PartitionID] = false;
 
                 // Updates REMOTELY
-                List<ViewSequencers> sequencers = new List<ViewSequencers>();
-                foreach (KeyValuePair<string, int> kvp in partition.ReplicasSequencers)
-                {
-                    ViewSequencers seq = new ViewSequencers
-                    {
-                        Sid = kvp.Key,
-                        Sequencer = kvp.Value
-                    };
-                    sequencers.Add(seq);
-                }
                 List<string> servers = partition.CurrentView.ViewParticipants;
                 servers.Remove(ServerID);
                 List<Task> requestTasks = new List<Task>();
+
                 foreach (string server in servers)
                 {
                     void p()
@@ -510,18 +310,16 @@ namespace GSTORE_Server.Storage
                             {
                                 ViewId = partition.CurrentView.ViewID,
                                 ViewLeader = ServerID,
-                                Pid = partition.PartitionID
+                                Pid = partition.PartitionID,
+                                ViewSequencer = partition.Sequencer
                             };
 
                             changeRequest.ViewParticipants.Add(partition.CurrentView.ViewParticipants);
-                            changeRequest.ViewSequencers.Add(sequencers);
                             Void reply = NodesCommunicator.GetServerClient(server).ViewChange(changeRequest);
                         }
                         catch (Exception)
                         {
-                            Console.ForegroundColor = ConsoleColor.DarkRed;
-                            Console.WriteLine(">>> SERVER {0} FAILED TO DELIVER VIEW CHANGE", server);
-                            Console.ForegroundColor = ConsoleColor.Gray;
+                            ConsoleWrite("StorageServer: Server " + server + " failed on receiving view change", ConsoleColor.DarkRed);
                         }
                     }
 
@@ -532,9 +330,222 @@ namespace GSTORE_Server.Storage
                 }
 
                 Task.WaitAll(requestTasks.ToArray());
-
             }
         }
+
+
+        public void ProcessViewDelivery(int viewID, string viewLeader, WriteData write)
+        {
+            lock (PartitionLockers[write.Pid])
+            {
+                if (viewID == Partitions[write.Pid].CurrentView.ViewID && viewLeader.Equals(Partitions[write.Pid].CurrentView.ViewLeader))
+                    Partitions[write.Pid].AddItem(write);
+            }
+
+        }
+
+
+        public void ProcessViewChange(string pid, int viewId, string viewLeader, List<String> viewParticipants, int viewSequencer)
+        {
+            lock (PartitionLockers[pid])
+            {
+                // Starts by retrieving old writes from last view
+                // Every server has every message on a view before moving on 
+                if (Partitions[pid].Sequencer < viewSequencer)
+                {
+                    int lastRequest = Partitions[pid].Sequencer;
+                    do
+                    {
+                        lastRequest += 1;
+
+                        // I'm updated now
+                        if (lastRequest == viewSequencer)
+                            break;
+
+                        bool success = false;
+                        foreach (string serverID in Partitions[pid].CurrentView.ViewParticipants)
+                        {
+                            try
+                            {
+                                WriteRetrievalRequest retrieveRequest = new WriteRetrievalRequest
+                                {
+                                    Tid = lastRequest,
+                                    Pid = pid,
+                                    ViewId = Partitions[pid].CurrentView.ViewID
+                                };
+                                WriteRequestData r = NodesCommunicator.GetServerClient(serverID).RetrieveWrite(retrieveRequest);
+
+                                // Process write
+                                Partitions[pid].AddItem(new WriteData(r));
+                                Partitions[pid].Sequencer += 1;
+                                success = true;
+
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                // Some other server is failing...
+                                // Leader it will take care of it
+                            }
+                        }
+
+                        // Failed to retrieve some write
+                        // Functionality compromised
+                        if (!success) Environment.Exit(0);
+                    } while (lastRequest < viewSequencer);
+                }
+
+
+                // Updates View
+                Partitions[pid].PreviousView = Partitions[pid].CurrentView;
+                Partitions[pid].CurrentView = new View(viewId, viewLeader, viewParticipants);
+                Elections[pid] = false;
+            }
+
+        }
+
+
+        /* 
+        * FAULT TOLERANCE
+        * ELECTIONS, HEARTBEATS
+        */
+        public void ProcessElection(string pid, string sid)
+        {
+            // Im going to be the leader
+            if (ServerID.Equals(sid))
+            {
+                // Updates new view locally
+                List<string> participants = Partitions[pid].CurrentView.ViewParticipants;
+                Partitions[pid].PreviousView = Partitions[pid].CurrentView;
+                Partitions[pid].CurrentView = new View(Partitions[pid].PreviousView.ViewID + 1, ServerID, participants);
+
+                // Updates new view remotely
+                ViewChangeRequest confirmation = new ViewChangeRequest
+                {
+                    Pid = pid,
+                    ViewId = Partitions[pid].CurrentView.ViewID,
+                    ViewLeader = sid,
+                    ViewSequencer = Partitions[pid].Sequencer
+                };
+                confirmation.ViewParticipants.Add(participants);
+
+                foreach (string participant in Partitions[pid].CurrentView.ViewParticipants)
+                {
+                    try
+                    {
+                        NodesCommunicator.GetServerClient(participant).ConfirmLeader(confirmation);
+                    }
+                    catch (Exception)
+                    {
+                        // do what? lol
+                    }
+                }
+
+                return;
+            }
+
+
+            // PARTICIPATING ON ELECTIONS
+            LeaderElectionRequest request;
+            if (String.Compare(ServerID, sid) < 0)
+                request = new LeaderElectionRequest { Pid = pid, Sid = ServerID };
+            else
+                request = new LeaderElectionRequest { Pid = pid, Sid = sid };
+
+            int attempts = 0;
+            do
+            {
+                int pos = (Partitions[pid].CurrentView.ViewParticipants.IndexOf(ServerID) + 1 + attempts) % Partitions[pid].CurrentView.ViewParticipants.Count;
+                attempts += 1;
+
+                try
+                {
+                    NodesCommunicator.GetServerClient(Partitions[pid].CurrentView.ViewParticipants[pos]).ElectLeader(request);
+                    break;
+                }
+                catch (Exception)
+                {
+                    // another participant is down, just keep going
+                }
+            } while (attempts < Partitions[pid].CurrentView.ViewParticipants.Count);
+
+        }
+
+        public void StartElections(string pid)
+        {
+            ConsoleWrite("StorageServer: Starting elections on partition " + pid, ConsoleColor.DarkMagenta);
+            Elections[pid] = true;
+            int electionAttempts = 0;
+
+            List<string> viewServers = Partitions[pid].CurrentView.ViewParticipants;
+            viewServers.Remove(Partitions[pid].CurrentView.ViewLeader);
+            do
+            {
+                int pos = (viewServers.IndexOf(ServerID) + 1 + electionAttempts) % viewServers.Count;
+                electionAttempts += 1;
+
+                try
+                {
+                    string sid = viewServers[pos];
+
+                    LeaderElectionRequest electionRequest = new LeaderElectionRequest { Pid = pid, Sid = sid };
+                    NodesCommunicator.GetServerClient(sid).ElectLeader(electionRequest);
+                    break;
+                }
+                catch (Exception)
+                {
+                    // another participant is down, just keep going
+                }
+            } while (electionAttempts < viewServers.Count);
+        }
+
+        public void CheckLeaderHeartbeat()
+        {
+            ConsoleWrite("Heartbeating leaders", ConsoleColor.DarkCyan);
+            foreach (Partition partition in Partitions.Values)
+            {
+                if (!Elections[partition.PartitionID])
+                {
+                    string leader = partition.CurrentView.ViewLeader;
+                    try
+                    {
+                        NodesCommunicator.GetServerClient(partition.CurrentView.ViewLeader).HeartBeat(new Void { });
+                        ConsoleWrite("Leader " + leader + " on partition " + partition.PartitionID + " still alive", ConsoleColor.DarkCyan);
+                    }
+                    catch (Exception)
+                    {
+                        ConsoleWrite("Leader " + leader + " on partition " + partition.PartitionID + " is dead", ConsoleColor.DarkRed);
+
+                        // Leader is down, start elections
+                        Elections[partition.PartitionID] = true;
+                        int electionAttempts = 0;
+
+                        List<string> viewServers = Partitions[partition.PartitionID].CurrentView.ViewParticipants;
+                        viewServers.Remove(Partitions[partition.PartitionID].CurrentView.ViewLeader);
+                        do
+                        {
+                            int pos = (viewServers.IndexOf(ServerID) + 1 + electionAttempts) % viewServers.Count;
+                            electionAttempts += 1;
+
+                            try
+                            {
+                                string sid = viewServers[pos];
+
+                                LeaderElectionRequest electionRequest = new LeaderElectionRequest { Pid = partition.PartitionID, Sid = sid };
+                                NodesCommunicator.GetServerClient(sid).ElectLeader(electionRequest);
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                // another participant is down, just keep going
+                            }
+                        } while (electionAttempts < viewServers.Count);
+                    }
+                }
+            }
+        }
+
+
 
         private void ConsoleWrite(string message, ConsoleColor color)
         {

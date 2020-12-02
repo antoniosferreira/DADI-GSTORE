@@ -48,16 +48,11 @@ message ViewDeliverRequest {
 	WriteRequestData message = 3;
 }
 
-message ViewSequencers {
-	string sid = 1;
-	int32 sequencer = 2;
-} 
-
 message ViewChangeRequest {
 	int32 viewId = 1;
 	string pid = 2;
 	string viewLeader = 3;
 	repeated string viewParticipants = 4;
-	repeated ViewSequencers viewSequencers = 5;
+	int32  viewSequencer = 5;
 }
 

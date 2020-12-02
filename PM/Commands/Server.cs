@@ -50,7 +50,7 @@ namespace PM.Commands
                         });
 
                     PuppetMaster.NodesCommunicator.ActivateServer(serverID);
-                    Console.WriteLine(">>> Server %s launched", serverID);
+                    Console.WriteLine(">>> Server {0} launched", serverID);
 
                     Thread.Sleep(200);
 

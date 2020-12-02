@@ -1,16 +1,18 @@
 using System;
 using System.Threading.Tasks;
-using Grpc.Core;
+
 using GSTORE_Server.Storage;
+
+using Grpc.Core;
 
 
 namespace GSTORE_Server
 {
     class StorageServerService : StorageServerServices.StorageServerServicesBase
     {
-        private readonly Server Server;
-        public StorageServerService(in Server server) {
-            Server = server;
+        private readonly StorageServer Storage;
+        public StorageServerService(in StorageServer storage) {
+            Storage = storage;
         }
 
 
@@ -26,14 +28,14 @@ namespace GSTORE_Server
 
             try
             {
-                (success, value) = Server.StorageServer.Read(request.PartitionID, request.ObjectID);
-                Console.WriteLine(">>> Read Processed: " + request.PartitionID + " : " + request.ObjectID);
+                (success, value) = Storage.Read(request.PartitionID, request.ObjectID);
+                ConsoleWrite("StorageServerService: Read processed :" + request.PartitionID + request.ObjectID, ConsoleColor.DarkGreen);
             }
-            catch (Exception e)
+            catch (Exception )
             {
-                Console.WriteLine(">>> Failed to Read: " + request.PartitionID + " : " + request.ObjectID);
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite("StorageServerService: Read failed :" + request.PartitionID + request.ObjectID, ConsoleColor.DarkRed);
             }
+
 
             return new ReadReply
             {
@@ -53,13 +55,12 @@ namespace GSTORE_Server
             bool success = false;
             try
             {
-                success = Server.StorageServer.Write(new WriteData(request));
-                Console.WriteLine(">>> Processed write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value + "| SUCCES:" + success);
+                success = Storage.Write(new WriteData(request));
+                ConsoleWrite("StorageServerService: Write processed :" + request.PartitionID + request.ObjectID + request.Value, ConsoleColor.DarkGreen);
             }
-            catch (Exception e)
+            catch (Exception )
             {
-                Console.WriteLine(">>> Failed to process write: " + request.PartitionID + " - " + request.ObjectID + " : " + request.Value);
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite("StorageServerService: Write failed :" + request.PartitionID + request.ObjectID + request.Value, ConsoleColor.DarkRed);
             }
 
             return new WriteReply
@@ -80,16 +81,24 @@ namespace GSTORE_Server
 
             try
             {
-                reply.Listings.Add(Server.StorageServer.ListServerPartitions());
-                Console.WriteLine(">>> Processed listServer ");
+                reply.Listings.Add(Storage.ListServerPartitions());
+                ConsoleWrite("StorageServerService: ListServer processed", ConsoleColor.DarkGreen);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(">>> Failed to process listServer ");
-                Console.WriteLine(e.StackTrace);
+                ConsoleWrite("StorageServerService: ListServer failed", ConsoleColor.DarkRed);
             }
 
             return reply;
+        }
+
+
+
+        private void ConsoleWrite(string message, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(message);
+            Console.ForegroundColor = ConsoleColor.Gray;
         }
     }
 }

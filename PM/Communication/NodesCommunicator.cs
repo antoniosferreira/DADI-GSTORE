@@ -11,7 +11,7 @@ namespace PM.Communication
     {
         // Nodes information
         private readonly Dictionary<string, (bool, PMServices.PMServicesClient)> Servers = new Dictionary<string, (bool, PMServices.PMServicesClient)>();
-        private readonly Dictionary<string, PMServices.PMServicesClient> Clients = new Dictionary<string, PMServices.PMServicesClient>();
+        private readonly Dictionary<string, StatusService.StatusServiceClient> Clients = new Dictionary<string, StatusService.StatusServiceClient>();
 
         // Reads data from file
         private readonly Nodes Nodes = new Nodes();
@@ -34,7 +34,7 @@ namespace PM.Communication
                 AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
                 GrpcChannel channel = GrpcChannel.ForAddress(kvp.Value);
 
-                Clients.Add(kvp.Key, new PMServices.PMServicesClient(channel));
+                Clients.Add(kvp.Key, new StatusService.StatusServiceClient(channel));
             }
         }
 
@@ -64,7 +64,7 @@ namespace PM.Communication
         }
 
 
-        public List<PMServices.PMServicesClient> GetAllClients()
+        public List<StatusService.StatusServiceClient> GetAllClients()
         {
             return Clients.Values.ToList();
         }

@@ -1,27 +1,28 @@
 ﻿using System.Threading.Tasks;
 using Grpc.Core;
+using System;
 
 namespace GSTORE_Client
 {
-    class StatusService : ServerServices.ServerServicesBase
+    class StatusServices : StatusService.StatusServiceBase
     {
 
         private readonly Client Client;
 
-        public StatusService(in Client cl)
+        public StatusServices(in Client cl)
         {
             Client = cl;
         }
 
-        public override Task<Empty> Status(Empty request, ServerCallContext context)
+        public override Task<Stat> Status(Stat request, ServerCallContext context)
         {
             return Task.FromResult(ProcessStatus());
         }
 
-        private Empty ProcessStatus()
+        private Stat ProcessStatus()
         {
             Client.PrintStatus();
-            return new Empty { };
+            return new Stat { };
         }
 
     }

@@ -39,7 +39,7 @@ namespace GSTORE_Server
             // Inits Services
             Grpc.Core.Server server = new Grpc.Core.Server
             {
-                Services = { StorageServerServices.BindService(new StorageServerService(this)),
+                Services = { StorageServerServices.BindService(new StorageServerService(this.StorageServer)),
                             PMServices.BindService(new PMService(this.StorageServer)),
                             ServerCommunicationServices.BindService(new ServerCommunicationService(this.StorageServer))},
                 Ports = { new ServerPort(ServerURL, ServerPort, ServerCredentials.Insecure) }

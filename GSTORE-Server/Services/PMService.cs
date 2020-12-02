@@ -1,6 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+
+using System.Collections.Generic;
+
 using Grpc.Core;
 
 using GSTORE_Server.Storage;
@@ -15,8 +17,6 @@ namespace GSTORE_Server
             Storage = storage;
         }
 
-
-        // NEW LOCAL PARTITION
         public override Task<Empty> Partition(PartitionRequest request, ServerCallContext context)
         {
             return Task.FromResult(ProcessPartition(request)); ;
@@ -26,18 +26,18 @@ namespace GSTORE_Server
             try
             {
                 List<string> servers = new List<string>(request.Servers);
+
                 Storage.NewPartition(request.PartitionID, servers);
-                ConsoleWrite(">>> New Partition " + request.PartitionID, ConsoleColor.DarkGreen);
+                ConsoleWrite("PMService: New Partition " + request.PartitionID, ConsoleColor.DarkGreen);
             }
             catch (Exception)
             {
-                ConsoleWrite(">>> Failed to process new partition " + request.PartitionID, ConsoleColor.DarkRed);
-                Console.ReadKey();
-                Environment.Exit(-1);
+                ConsoleWrite("PMService: Failed New Partition " + request.PartitionID, ConsoleColor.DarkRed);
             }
 
             return new Empty { };
         }
+
 
 
         // CRASH OPERATION
@@ -62,7 +62,7 @@ namespace GSTORE_Server
             }
             catch (Exception)
             {
-                ConsoleWrite(">>> Failed to print Status", ConsoleColor.DarkRed);
+                ConsoleWrite("PMService: Failed to print status", ConsoleColor.DarkRed);
             }
 
             return new Empty { };
@@ -79,14 +79,13 @@ namespace GSTORE_Server
         {
             try
             {
-                ConsoleWrite(">>> Process is now being FREEZED", ConsoleColor.DarkCyan);
+                ConsoleWrite("PMService: PROCESS FREEZED", ConsoleColor.Yellow);
                 Storage.Freeze();
             }
             catch (Exception)
             {
-                ConsoleWrite(">>> Failed to FREEZE the process", ConsoleColor.DarkRed);
+                ConsoleWrite("PMService: Failed to process freeze", ConsoleColor.DarkRed);
             }
-
 
             return new Empty { } ;
         }
@@ -103,11 +102,11 @@ namespace GSTORE_Server
             try
             {
                 Storage.Unfreeze();
-                ConsoleWrite(">>> Process is now UNFREEZED!", ConsoleColor.DarkCyan);
+                ConsoleWrite("PMService: PROCESS UNFREEZED", ConsoleColor.Yellow);
             }
             catch (Exception)
             {
-                ConsoleWrite(">>> Failed to UNFREEZE the process", ConsoleColor.DarkRed);
+                ConsoleWrite("PMService: Failed to process unfreeze", ConsoleColor.DarkRed);
             }
 
 

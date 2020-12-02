@@ -2,5 +2,5 @@
 SERVER s2 http://localhost:2002
 SERVER s3 http://localhost:2003
 SERVER s4 http://localhost:2006
-SERVER c1 http://localhost:2004
-SERVER c2 http://localhost:2005
+CLIENT c1 http://localhost:2004
+CLIENT c2 http://localhost:2005

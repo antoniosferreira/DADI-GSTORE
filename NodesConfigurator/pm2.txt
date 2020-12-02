@@ -8,6 +8,5 @@ wait 2500
 client c1 http://localhost:2004 c1
 client c2 http://localhost:2005 c2
 wait 4550
-crash s2
 wait 4000
 status

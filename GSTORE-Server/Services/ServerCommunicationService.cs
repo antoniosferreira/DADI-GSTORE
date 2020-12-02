@@ -27,12 +27,12 @@ namespace GSTORE_Server
                 WriteData write = new WriteData(request.Tid, request.Pid, request.Oid, request.Value);
                 success = Storage.LaunchWrite(write);
 
-                string displaymessage = ">>> Write: "+ request.Pid + " - " + request.Oid + " - " + request.Value;
+                string displaymessage = "ServerCommunicationService: Write processed "+ request.Pid + " - " + request.Oid + " - " + request.Value;
                 ConsoleWrite(displaymessage, ConsoleColor.DarkGreen);
             }
             catch (Exception)
             {
-                string displaymessage = ">>> Failed to process Write " + request.Pid + " - " + request.Oid + " - " + request.Value;
+                string displaymessage = "ServerCommunicationService: Failed to process " + request.Pid + " - " + request.Oid + " - " + request.Value;
                 ConsoleWrite(displaymessage, ConsoleColor.DarkRed);
             }
 
@@ -49,12 +49,11 @@ namespace GSTORE_Server
             try
             {
                 Storage.ProcessViewDelivery(request.ViewId, request.ViewLeader, new WriteData(request.Message));
-                ConsoleWrite(">>> Received write " + request.Message.Tid + " :" + request.Message.Pid + request.Message.Oid + request.Message.Value + " from view " + request.ViewId, ConsoleColor.DarkGreen);
+                ConsoleWrite(">>> Received view delivery " + request.Message.Tid + " :" + request.Message.Pid + request.Message.Oid + request.Message.Value + " from view " + request.ViewId, ConsoleColor.DarkGreen);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 ConsoleWrite(">>> Failed to process view delivery " + request.ViewId, ConsoleColor.DarkRed);
-                Console.WriteLine(e.StackTrace);
             }
 
             return new Void { };
@@ -74,12 +73,8 @@ namespace GSTORE_Server
                 foreach (string server in request.ViewParticipants)
                     participants.Add(server);
 
-                List<(string, int)> sequencers = new List<(string, int)>();
-                foreach (ViewSequencers vs in request.ViewSequencers)
-                    sequencers.Add((vs.Sid, vs.Sequencer));
 
-
-                Storage.ProcessViewChange(request.Pid, request.ViewId, request.ViewLeader, participants, sequencers);
+                Storage.ProcessViewChange(request.Pid, request.ViewId, request.ViewLeader, participants, request.ViewSequencer);
                 ConsoleWrite(">>> Updated new view" + request.ViewId + " from leader " + request.ViewLeader, ConsoleColor.DarkGreen);
 
             }
@@ -159,12 +154,7 @@ namespace GSTORE_Server
                 foreach (string server in request.ViewParticipants)
                     participants.Add(server);
 
-                List<(string, int)> sequencers = new List<(string, int)>();
-                foreach (ViewSequencers vs in request.ViewSequencers)
-                    sequencers.Add((vs.Sid, vs.Sequencer));
-
-
-                Storage.ProcessViewChange(request.Pid, request.ViewId, request.ViewLeader, participants, sequencers);
+                Storage.ProcessViewChange(request.Pid, request.ViewId, request.ViewLeader, participants, request.ViewSequencer);
                 ConsoleWrite(">>> Updated new Leader on view" + request.ViewId + " to leader " + request.ViewLeader, ConsoleColor.DarkGreen);
             }
             catch (Exception)

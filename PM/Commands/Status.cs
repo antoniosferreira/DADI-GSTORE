@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -21,28 +20,45 @@ namespace PM.Commands
 
         public override void Exec(string input)
         {
-            try
+            
+            foreach (PMServices.PMServicesClient server in PuppetMaster.NodesCommunicator.GetAllServersClients())
             {
-                List<PMServices.PMServicesClient> serversList = PuppetMaster.NodesCommunicator.GetAllServersClients();
-                List<PMServices.PMServicesClient> clientsList = PuppetMaster.NodesCommunicator.GetAllClients();
+                void p()
+                {
+                    try
+                    {
+                        server.Status(new Empty { });
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Failed to display status on some node");
+                    }
+                }
 
-                foreach (PMServices.PMServicesClient server in serversList)
-                    Task.Run(() => server.Status(new Empty { }));
-
-                foreach (PMServices.PMServicesClient client in clientsList)
-                    Task.Run(() => client.Status(new Empty { }));
-
+                Action action = p;
+                Task task = new Task(action);
+                task.Start();
             }
-            catch (Grpc.Core.RpcException)
+
+
+            foreach (StatusService.StatusServiceClient server in PuppetMaster.NodesCommunicator.GetAllClients())
             {
-                Console.WriteLine(">>> STATUS: Some node was unreacheable");
-                return;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
+                void p()
+                {
+                    try
+                    {
+                        server.Status(new Stat { });
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Failed to display status on some node");
+                    }
+                }
+
+                Action action = p;
+                Task task = new Task(action);
+                task.Start();
             }
         }
-
     }
 }

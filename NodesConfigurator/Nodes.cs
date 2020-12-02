@@ -24,7 +24,9 @@ namespace NodesConfigurator
                     ServersList.Add(words[1], words[2]);
                 if (words[0].Equals("CLIENT"))
                     ClientsList.Add(words[1], words[2]);
+
             }
+
         }
 
         public Dictionary<string, string> GetAllServers()

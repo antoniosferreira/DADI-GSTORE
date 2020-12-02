@@ -41,12 +41,11 @@ namespace GSTORE_Client
                 Console.WriteLine("=== CLIENT RUNNING ===");
                 Console.WriteLine("ClientID:" + clientID + "\nClientURL:" + clientURL);
 
-
                 // Inits Services
-                Uri uri = new Uri(clientURL);
-                Server server = new Server
+                Uri uri = new Uri(clientURL);                
+                Grpc.Core.Server server = new Grpc.Core.Server
                 {
-                    Services = { ServerServices.BindService(new StatusService(client))},
+                    Services = {StatusService.BindService(new StatusServices(client))},
                     Ports = { new ServerPort(uri.Host, uri.Port, ServerCredentials.Insecure) }
                 };
                 server.Start();
